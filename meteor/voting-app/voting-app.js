@@ -12,7 +12,7 @@ if (Meteor.isClient) {
             var question = event.target.question.value;
 
             var opts = {}
-            var options = event.target.options.value.split(",").forEach(
+            event.target.options.value.split(",").forEach(
                     function(element, index){
                         opts[element] = 0
                     });
@@ -40,7 +40,7 @@ if (Meteor.isClient) {
             var set = {};
             set[search_string] = num+1;
             Questions.update({_id: this._id}, {$set: set});
-            //Questions.update({_id: this._id}, {$set: {"options.asdsa": 17}});
+
             return false;
         }
     });

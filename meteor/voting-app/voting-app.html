@@ -32,15 +32,23 @@
     <li>
 
         <div class="text">
-            <button class="delete btn btn-xs">&times;</button>
+            {{#if currentUser}}
+                <button class="delete btn btn-xs btn-danger">&times;</button>
+            {{/if}}
             <strong>{{username}}</strong> - {{question}}
             {{#if currentUser}}
                 <form class="vote form-inline well" >
                     {{#each arrayify options}}
                         <input type="radio" name="voteoption" value="{{key}}"/> {{key}} ({{value}}) <br/>
                     {{/each}}
-                    <input type="submit" value="Submit" class="btn btn-sm" />
+                    <input type="submit" value="Submit" class="btn btn-sm btn-primary" />
                 </form>
+            {{else}}
+                    <ul>
+                    {{#each arrayify options}}
+                    <li>{{key}} ({{value}})</li>
+                    {{/each}}
+                    </ul>
             {{/if}}
         </div>
     </li>

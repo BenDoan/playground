@@ -9,3 +9,7 @@ li.checked .text {
 li {
     list-style-type:none;
 }
+
+button.delete{
+    margin-bottom:5px;
+}
