@@ -1,0 +1,48 @@
+<head>
+    <title>voting-app</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Votes</h1>
+            {{>loginButtons}}
+        </header>
+
+
+
+        {{#if currentUser}}
+            <form class="new-vote form-inline well">
+                <input type="text" name="question" placeholder="Add new vote" />
+                <input type="text" name="options" placeholder="Options separated by commas" />
+                <input type="submit" class="btn btn-sm" value="Submit" />
+            </form>
+        {{/if}}
+
+        <ul>
+            {{#each votes}}
+                {{>vote}}
+            {{/each}}
+        </ul>
+    </div>
+</body>
+
+<template name="vote">
+    <li class="{{#if checked}}checked{{/if}}">
+
+        <div class="text">
+            <button class="delete btn btn-xs">&times;</button>
+            <strong>{{username}}</strong> - {{question}}
+            {{#if currentUser}}
+                <form class="vote form-inline well" >
+                    {{#each options}}
+                        <input type="radio" name="voteoption" value="{{this}}"/> {{this}} {{index}} <br/>
+                    {{/each}}
+                    <input type="submit" value="Submit" class="btn btn-sm" />
+                </form>
+            {{/if}}
+        </div>
+    </li>
+</template>
+

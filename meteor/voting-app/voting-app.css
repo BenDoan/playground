@@ -1,0 +1,11 @@
+li.checked {
+  color: #888;
+}
+
+li.checked .text {
+  text-decoration: line-through;
+}
+
+li {
+    list-style-type:none;
+}
