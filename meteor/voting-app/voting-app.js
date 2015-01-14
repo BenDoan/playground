@@ -1,29 +1,29 @@
-Votes = new Mongo.Collection("votes");
+Questions = new Mongo.Collection("questions");
 
 if (Meteor.isClient) {
     Template.body.helpers({
         votes: function(){
-            return Votes.find({}, {sort: {createdAt: -1}}).map(
-                    function(obj, index){
-                        console.log(index);
-                        obj.index = index;
-                        return obj;
-                    });
+            return Questions.find({}, {sort: {createdAt: -1}});
         }
     });
 
     Template.body.events({
         "submit .new-vote": function (event){
             var question = event.target.question.value;
-            var options = event.target.options.value.split(",");
 
-            Votes.insert({
+            var opts = {}
+            var options = event.target.options.value.split(",").forEach(
+                    function(element, index){
+                        opts[element] = 0
+                    });
+
+
+            Questions.insert({
                 question: question,
-                options: options,
+                options: opts,
                 createdAt: new Date(),
                 owner: Meteor.userId(),
-                username: Meteor.user().username,
-                votes: {}
+                username: Meteor.user().username
             });
 
             event.target.question.value = "";
@@ -33,14 +33,21 @@ if (Meteor.isClient) {
         },
         "submit .vote": function (event){
             var voteoption = event.target.voteoption.value;
+            search_string = "options." + voteoption;
 
+            var num = Questions.findOne({_id: this._id}).options[voteoption];
+
+            var set = {};
+            set[search_string] = num+1;
+            Questions.update({_id: this._id}, {$set: set});
+            //Questions.update({_id: this._id}, {$set: {"options.asdsa": 17}});
             return false;
         }
     });
 
     Template.vote.events({
         "click .delete": function(){
-            Votes.remove(this._id);
+            Questions.remove(this._id);
         }
     });
 
@@ -54,3 +61,9 @@ if (Meteor.isServer) {
     // code to run on server at startup
   });
 }
+
+Handlebars.registerHelper('arrayify',function(obj){
+    result = [];
+    for (var key in obj) result.push({key:key,value:obj[key]});
+    return result;
+});
