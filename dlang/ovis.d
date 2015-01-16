@@ -6,34 +6,58 @@ import std.c.time;
 import core.thread;
 import std.datetime;
 import std.file;
+import std.getopt;
 
 alias core.thread.Thread.sleep  Sleep;
 
-const string DEFAULT_LOG_LOCATION = "~/.ovis-log";
+const string DEFAULT_LOG_LOCATION = "/home/ben/.ovis-log";
+const auto SLEEP_DELAY = 50.msecs;
+const int INVALID_ARGUMENTS = 1;
 
-void main(){
+string logLocation = DEFAULT_LOG_LOCATION;
+bool verbose = false;
+
+int main(string[] args){
+    try {
+        getopt(args,
+            std.getopt.config.bundling,
+            "log-location|l", &logLocation,
+            "verbose|v", &verbose);
+    }catch(GetOptException e){
+        writeln(e.msg);
+        return INVALID_ARGUMENTS;
+    }
+
+    track_time(logLocation, verbose);
+
+    return 0;
+}
+
+void track_time(string logLocation, bool verbose){
     string lastWindow = "";
     auto lastTime = Clock.currTime();
 
     while(true){
         string curWindow = get_cur_window_name();
 
-        if (lastWindow != curWindow){
+        if (lastWindow != curWindow && lastWindow != ""){
             auto currentTime = Clock.currTime();
 
-            writeln(lastWindow);
-            writeln(currentTime - lastTime);
-            writeln("");
+            if (verbose){
+                writeln(lastWindow);
+                writeln(currentTime - lastTime);
+                writeln("");
+            }
 
             string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
 
-            auto f = File(DEFAULT_LOG_LOCATION, "w+");
+            auto f = File(logLocation, "a");
             f.write(outstr);
             lastTime = currentTime;
         }
 
         lastWindow = curWindow;
-        Sleep(50.msecs);
+        Sleep(SLEEP_DELAY);
     }
 }
 
