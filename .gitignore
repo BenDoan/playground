@@ -1,4 +1,6 @@
 *.o
 *.so
 *.log
+*.hi
 ovis
+test
