@@ -11,3 +11,5 @@ accounts-ui
 accounts-password
 twbs:bootstrap
 accounts-github
+accounts-twitter
+accounts-google

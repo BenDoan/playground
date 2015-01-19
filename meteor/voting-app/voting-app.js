@@ -10,6 +10,7 @@ if (Meteor.isClient) {
     Template.body.events({
         "submit .new-vote": function (event){
             var question = event.target.question.value;
+            var random = event.target.random.value;
 
             var opts = {}
             event.target.options.value.split(",").forEach(
@@ -23,7 +24,8 @@ if (Meteor.isClient) {
                 options: opts,
                 createdAt: new Date(),
                 owner: Meteor.userId(),
-                username: Meteor.user().username
+                username: Meteor.user().username,
+                random: random
             });
 
             event.target.question.value = "";
