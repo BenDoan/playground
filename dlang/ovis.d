@@ -13,22 +13,34 @@ alias core.thread.Thread.sleep  Sleep;
 const string DEFAULT_LOG_LOCATION = "/home/ben/.ovis-log";
 const auto SLEEP_DELAY = 50.msecs;
 const int INVALID_ARGUMENTS = 1;
+const string HELP_MESSAGE = "Usage: ovis [OPTION]...
+options:
+--log-location     defines where the ovis log is placed
+--verbose          turns on verbose logging
+--help             prints this help message";
 
 string logLocation = DEFAULT_LOG_LOCATION;
 bool verbose = false;
+bool help = false;
 
 int main(string[] args){
     try {
         getopt(args,
             std.getopt.config.bundling,
             "log-location|l", &logLocation,
-            "verbose|v", &verbose);
+            "verbose|v", &verbose,
+            "help|h", &help);
     }catch(GetOptException e){
-        writeln(e.msg);
+        writeln("Invalid Arguments");
+        writeln(HELP_MESSAGE);
         return INVALID_ARGUMENTS;
     }
 
-    track_time(logLocation, verbose);
+    if (help){
+        writeln(HELP_MESSAGE);
+    }else{
+        track_time(logLocation, verbose);
+    }
 
     return 0;
 }
