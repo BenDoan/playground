@@ -40,7 +40,7 @@ void track_time(string logLocation, bool verbose){
     while(true){
         string curWindow = get_cur_window_name();
 
-        if (lastWindow != curWindow && lastWindow != ""){
+        if (curWindow != null && lastWindow != curWindow && lastWindow != ""){
             auto currentTime = Clock.currTime();
 
             if (verbose){
@@ -66,14 +66,14 @@ auto get_cur_window_name(){
 
     auto m = match(xprop_active, r"(0x[0-9a-f]+)");
     if (!m){
-        writeln("Error: Can't find window property");
+        return null;
     }
     string window_id = m.captures[0];
 
     string net_wm_name = shell(format("xprop -id %s _NET_WM_NAME", window_id));
     m = match(net_wm_name, r"=(.*)");
     if (!m){
-        writeln("Error: Can't find window property");
+        return null;
     }
     auto wm_name = m.captures[0][3..$-1];
     return wm_name;
