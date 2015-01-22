@@ -7,6 +7,7 @@ import core.thread;
 import std.datetime;
 import std.file;
 import std.getopt;
+import std.conv;
 
 alias core.thread.Thread.sleep  Sleep;
 
@@ -48,6 +49,7 @@ int main(string[] args){
 void track_time(string logLocation, bool verbose){
     string lastWindow = "";
     auto lastTime = Clock.currTime();
+    uint idleTime = 0;
 
     while(true){
         string curWindow = get_cur_window_name();
@@ -66,6 +68,7 @@ void track_time(string logLocation, bool verbose){
             auto f = File(logLocation, "a");
             f.write(outstr);
             lastTime = currentTime;
+            idleTime = get_idle_time();
         }
 
         lastWindow = curWindow;
@@ -89,4 +92,10 @@ auto get_cur_window_name(){
     }
     auto wm_name = m.captures[0][3..$-1];
     return wm_name;
+}
+
+auto get_idle_time(){
+    string time_idle = shell("xprintidle");
+
+    return parse!uint(time_idle);
 }
