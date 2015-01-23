@@ -3,25 +3,31 @@ import std.process;
 import std.regex;
 import std.string;
 import std.c.time;
-import core.thread;
 import std.datetime;
 import std.file;
 import std.getopt;
 import std.conv;
 
+import core.thread;
+
+import std.c.stdlib;
+
 alias core.thread.Thread.sleep  Sleep;
 
 const string DEFAULT_LOG_LOCATION = "/home/ben/.ovis-log";
 const auto SLEEP_DELAY = 50.msecs;
+const uint DEFAULT_MIN_IDLE_TIME = 300; // 5 mins in seconds
 const int INVALID_ARGUMENTS = 1;
 const string HELP_MESSAGE = "Usage: ovis [OPTION]...
 options:
 --log-location     defines where the ovis log is placed
 --verbose          turns on verbose logging
+--min-idle-time    minimum seconds of :idle time before tracking turns off
 --help             prints this help message";
 
 string logLocation = DEFAULT_LOG_LOCATION;
 bool verbose = false;
+uint minIdleTime = DEFAULT_MIN_IDLE_TIME;
 bool help = false;
 
 int main(string[] args){
@@ -30,6 +36,7 @@ int main(string[] args){
             std.getopt.config.bundling,
             "log-location|l", &logLocation,
             "verbose|v", &verbose,
+            "min-idle-time|m", &minIdleTime,
             "help|h", &help);
     }catch(GetOptException e){
         writeln("Invalid Arguments");
@@ -40,16 +47,16 @@ int main(string[] args){
     if (help){
         writeln(HELP_MESSAGE);
     }else{
-        track_time(logLocation, verbose);
+        track_time(logLocation, minIdleTime, verbose);
     }
 
     return 0;
 }
 
-void track_time(string logLocation, bool verbose){
+void track_time(string logLocation, uint minIdleTime, bool verbose){
     string lastWindow = "";
     auto lastTime = Clock.currTime();
-    uint idleTime = 0;
+    auto logFile = File(logLocation, "a");
 
     while(true){
         string curWindow = get_cur_window_name();
@@ -57,18 +64,24 @@ void track_time(string logLocation, bool verbose){
         if (curWindow != null && lastWindow != curWindow && lastWindow != ""){
             auto currentTime = Clock.currTime();
 
-            if (verbose){
-                writeln(lastWindow);
-                writeln(currentTime - lastTime);
-                writeln("");
+
+            int idleTime = get_idle_time();
+            if (idleTime < (minIdleTime*1000)){
+                if (verbose){
+                    writeln(lastWindow);
+                    writeln(currentTime - lastTime);
+                    writeln("");
+                }
+
+                string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
+                logFile.write(outstr);
+            }else{
+                if (verbose){
+                    writef("User has been idle for %s ms - not logging time\n", idleTime);
+                }
             }
 
-            string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
-
-            auto f = File(logLocation, "a");
-            f.write(outstr);
             lastTime = currentTime;
-            idleTime = get_idle_time();
         }
 
         lastWindow = curWindow;
@@ -98,4 +111,13 @@ auto get_idle_time(){
     string time_idle = shell("xprintidle");
 
     return parse!uint(time_idle);
+}
+
+auto xprintidle_on_system(){
+    try {
+        string which_xprintidle = shell("which xprintidle");
+        return true;
+    }catch(std.exception.ErrnoException e){
+        return false;
+    }
 }
