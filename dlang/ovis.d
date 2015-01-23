@@ -15,17 +15,20 @@ import std.c.stdlib;
 alias core.thread.Thread.sleep  Sleep;
 
 const string DEFAULT_LOG_LOCATION = "/home/ben/.ovis-log";
+const string DEFAULT_LOG_TYPE = "default";
 const auto SLEEP_DELAY = 50.msecs;
 const uint DEFAULT_MIN_IDLE_TIME = 300; // 5 mins in seconds
 const int INVALID_ARGUMENTS = 1;
 const string HELP_MESSAGE = "Usage: ovis [OPTION]...
 options:
---log-location     defines where the ovis log is placed
+--output           defines where the ovis log is placed
+--log-type         defines which type of log is outputted (opts: default, csv)
 --verbose          turns on verbose logging
 --min-idle-time    minimum seconds of :idle time before tracking turns off
 --help             prints this help message";
 
 string logLocation = DEFAULT_LOG_LOCATION;
+string logType = DEFAULT_LOG_TYPE;
 bool verbose = false;
 uint minIdleTime = DEFAULT_MIN_IDLE_TIME;
 bool help = false;
@@ -34,7 +37,8 @@ int main(string[] args){
     try {
         getopt(args,
             std.getopt.config.bundling,
-            "log-location|l", &logLocation,
+            "output|o", &logLocation,
+            "log-type|l", &logType,
             "verbose|v", &verbose,
             "min-idle-time|m", &minIdleTime,
             "help|h", &help);
@@ -47,18 +51,18 @@ int main(string[] args){
     if (help){
         writeln(HELP_MESSAGE);
     }else{
-        track_time(logLocation, minIdleTime, verbose);
+        track_time(logLocation, logType, minIdleTime, verbose);
     }
 
     return 0;
 }
 
-void track_time(string logLocation, uint minIdleTime, bool verbose){
+void track_time(string logLocation, string logType, uint minIdleTime, bool verbose){
     string lastWindow = "";
     auto lastTime = Clock.currTime();
-    auto logFile = File(logLocation, "a");
 
     while(true){
+        auto logFile = File(logLocation, "a");
         string curWindow = get_cur_window_name();
 
         if (curWindow != null && lastWindow != curWindow && lastWindow != ""){
@@ -73,8 +77,14 @@ void track_time(string logLocation, uint minIdleTime, bool verbose){
                     writeln("");
                 }
 
-                string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
-                logFile.write(outstr);
+                switch(logType){
+                    case "default":
+                        writeLogDefault(lastWindow, currentTime, lastTime, logFile);
+                        break;
+                    default:
+                        break;
+                }
+
             }else{
                 if (verbose){
                     writef("User has been idle for %s ms - not logging time\n", idleTime);
@@ -87,6 +97,11 @@ void track_time(string logLocation, uint minIdleTime, bool verbose){
         lastWindow = curWindow;
         Sleep(SLEEP_DELAY);
     }
+}
+
+auto writeLogDefault(string lastWindow, SysTime currentTime, SysTime lastTime, File logFile){
+    string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
+    logFile.write(outstr);
 }
 
 auto get_cur_window_name(){
