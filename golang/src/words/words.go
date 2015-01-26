@@ -1,6 +1,10 @@
 // Provides a set of tools for dealing with words
 package words
 
+import (
+    "strings"
+);
+
 // ReverseString returns the reverse of s
 func ReverseString(s string) (result string) {
 	for _, v := range s {
@@ -40,3 +44,16 @@ func IsPalindrome(s string) (result bool) {
 	return true
 }
 
+
+// GetWordCounts returns a map that maps each word to its count in s
+func GetWordCounts(s string) (counts map[string]int) {
+    counts = make(map[string]int);
+
+    splitString := strings.Split(s, " ");
+
+    for _, val := range splitString {
+        counts[val]++;
+    }
+
+    return
+}

@@ -1,6 +1,9 @@
 package words
 
-import "testing"
+import (
+    "testing"
+    "reflect"
+);
 
 func TestReverseString(t *testing.T) {
 	in, out := "hello", "olleh"
@@ -38,14 +41,18 @@ func TestIsPalindrome(t *testing.T) {
 	}
 }
 
-//func TestCountWords(t *testing.T) {
-	//in, out1, out2 := "Hello this is a simple sentence. Hello.", 7, []string{"is", "a", "simple", "sentence", "hello"}
-	//if x, x2 := CountWords(in); x != out1 && x2 != out2 {
-		//t.Errorf("CountWords(%v) = %v, want %v", in, x, out1)
-	//}
+func TestGetWordCount(t *testing.T) {
+	in, out := "hello world world the is a sentence we we we we", map[string]int{
+        "hello": 1,
+        "world": 2,
+        "the": 1,
+        "is": 1,
+        "a": 1,
+        "sentence": 1,
+        "we": 4,
+    }
 
-	//in, out1, _= "Hello this is a simple sentence.  Hello.", 6, []string{"Hello", "this", "is", "a", "simple"}
-	//if x, _ := CountWords(in); x != 7 {
-		//t.Errorf("CountWords(%v) = %v, want %v", in, x, out1)
-	//}
-//}
+	if x := GetWordCounts(in); !reflect.DeepEqual(x, out) {
+		t.Errorf("IsPalindrome(%v) = %v, want %v", in, x, out)
+	}
+}
