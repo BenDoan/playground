@@ -5,3 +5,6 @@
 ovis
 test
 nimcache
+golang/bin/*
+golang/pkg/*
+golang/projects/*
