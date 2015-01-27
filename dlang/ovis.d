@@ -7,6 +7,7 @@ import std.datetime;
 import std.file;
 import std.getopt;
 import std.conv;
+import std.path;
 
 import core.thread;
 
@@ -14,7 +15,6 @@ import std.c.stdlib;
 
 alias core.thread.Thread.sleep  Sleep;
 
-const string DEFAULT_LOG_LOCATION = "/home/ben/.ovis-log";
 const string DEFAULT_LOG_TYPE = "default";
 const auto SLEEP_DELAY = 50.msecs;
 const uint DEFAULT_MIN_IDLE_TIME = 300; // 5 mins in seconds
@@ -27,13 +27,14 @@ options:
 --min-idle-time    minimum seconds of :idle time before tracking turns off
 --help             prints this help message";
 
-string logLocation = DEFAULT_LOG_LOCATION;
-string logType = DEFAULT_LOG_TYPE;
-bool verbose = false;
-uint minIdleTime = DEFAULT_MIN_IDLE_TIME;
-bool help = false;
 
 int main(string[] args){
+    string logLocation = expandTilde("~/.ovis-log");
+    string logType = DEFAULT_LOG_TYPE;
+    bool verbose = false;
+    uint minIdleTime = DEFAULT_MIN_IDLE_TIME;
+    bool help = false;
+
     try {
         getopt(args,
             std.getopt.config.bundling,
@@ -81,6 +82,9 @@ void track_time(string logLocation, string logType, uint minIdleTime, bool verbo
                     case "default":
                         writeLogDefault(lastWindow, currentTime, lastTime, logFile);
                         break;
+                    case "csv":
+                        writeLogCsv(lastWindow, currentTime, lastTime, logFile);
+                        break;
                     default:
                         break;
                 }
@@ -102,6 +106,10 @@ void track_time(string logLocation, string logType, uint minIdleTime, bool verbo
 auto writeLogDefault(string lastWindow, SysTime currentTime, SysTime lastTime, File logFile){
     string outstr = format("Changing to %s, %s\n", lastWindow, currentTime - lastTime);
     logFile.write(outstr);
+}
+
+auto writeLogCsv(string lastWindow, SysTime currentTime, SysTime lastTime, File logFile){
+    string outstr = format("%s, %s", lastWindow, currentTime - lastTime);
 }
 
 auto get_cur_window_name(){
