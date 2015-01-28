@@ -57,3 +57,8 @@ func GetWordCounts(s string) (counts map[string]int) {
 
     return
 }
+
+func getSoundex(s string) (soundex string) {
+
+    return
+}
