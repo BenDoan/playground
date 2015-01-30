@@ -14,7 +14,7 @@ var log_file = open(LOG_NAME, fmAppend)
 var last_window = ""
 var last_time = times.getTime()
 
-proc handler() {.noconv.} =
+proc leave() {.noconv.} =
     let time = times.getTime()
     var time_spent = time-last_time
 
@@ -23,7 +23,8 @@ proc handler() {.noconv.} =
     echo out_str
     quit 0
 
-setControlCHook(handler)
+setControlCHook(leave)
+addQuitProc(leave)
 
 proc main() =
     while true:

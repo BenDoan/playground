@@ -2,9 +2,12 @@
 *.so
 *.log
 *.hi
+*.cmi
+*.cmx
 ovis
 test
 nimcache
 golang/bin/*
 golang/pkg/*
 golang/projects/*
+
