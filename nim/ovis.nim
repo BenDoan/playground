@@ -5,22 +5,27 @@ import os
 import times
 import strutils
 
+proc get_cur_window_name(): string
+
 var LOG_NAME = expandTilde("~/.novis-log")
 var SLEEP_TIME = 500
 
-proc get_cur_window_name(): string =
-    let xprop_active_window = osproc.execCmdEx("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW").output
-    let window_id =  xprop_active_window.findAll(re"0x[0-9a-f]+")[0]
+var log_file = open(LOG_NAME, fmAppend)
+var last_window = ""
+var last_time = times.getTime()
 
-    let net_wm_name = osproc.execCmdEx(subex"xprop -id $1 _NET_WM_NAME" % window_id).output;
+proc handler() {.noconv.} =
+    let time = times.getTime()
+    var time_spent = time-last_time
 
-    net_wm_name[29.. -3]
+    var out_str = format("$1, $2 seconds\n", last_window, time_spent)
+    log_file.write(out_str)
+    echo out_str
+    quit 0
+
+setControlCHook(handler)
 
 proc main() =
-    var log_file = open(LOG_NAME, fmAppend)
-    var last_window = ""
-    var last_time = times.getTime()
-
     while true:
         let cur_window = get_cur_window_name()
 
@@ -36,5 +41,14 @@ proc main() =
 
         last_window = cur_window
         os.sleep(SLEEP_TIME)
+
+
+proc get_cur_window_name(): string =
+    let xprop_active_window = osproc.execCmdEx("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW").output
+    let window_id =  xprop_active_window.findAll(re"0x[0-9a-f]+")[0]
+
+    let net_wm_name = osproc.execCmdEx(format("xprop -id $1 _NET_WM_NAME", window_id)).output;
+
+    net_wm_name[29.. -3]
 
 main()
