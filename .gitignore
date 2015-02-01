@@ -4,6 +4,7 @@
 *.hi
 *.cmi
 *.cmx
+*.cmo
 ovis
 test
 nimcache

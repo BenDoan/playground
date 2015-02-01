@@ -1,30 +1,36 @@
+let doc = """
+Tracks time using the currently active window.
+
+Usage:
+    ovis [options]
+
+    Options:
+      --output          defines where the ovis log is placed
+      --log-type        defines the log type
+      --verbose         turns on verbose logging on
+      --min-idle-time   minimum seconds of idle time before tracking turns off
+      --help            prints this help message
+"""
+
+import docopt
+import os
 import osproc
 import re
-import subexes
-import os
-import times
 import strutils
+import subexes
+import times
 
 proc get_cur_window_name(): string
+proc write_entry(last_window: string, time_spent: int64, log_file: File)
 
-var LOG_NAME = expandTilde("~/.novis-log")
-var SLEEP_TIME = 500
+let LOG_NAME = expandTilde("~/.novis-log")
+let SLEEP_TIME = 500
 
 var log_file = open(LOG_NAME, fmAppend)
 var last_window = ""
 var last_time = times.getTime()
 
-proc leave() {.noconv.} =
-    let time = times.getTime()
-    var time_spent = time-last_time
-
-    var out_str = format("$1, $2 seconds\n", last_window, time_spent)
-    log_file.write(out_str)
-    echo out_str
-    quit 0
-
-setControlCHook(leave)
-addQuitProc(leave)
+let args = docopt(doc, version="0.0.1")
 
 proc main() =
     while true:
@@ -32,17 +38,18 @@ proc main() =
 
         if last_window != cur_window and last_window != "":
             let time = times.getTime()
-            var time_spent = time-last_time
-
-            var out_str = format("$1, $2 seconds\n", last_window, time_spent)
-            log_file.write(out_str)
-            echo out_str
+            let time_spent = time-last_time
+            write_entry(last_window, time_spent, log_file)
 
             last_time = time
 
         last_window = cur_window
         os.sleep(SLEEP_TIME)
 
+proc write_entry(last_window: string, time_spent: int64, log_file: File) =
+    let out_str = format("$1, $2 seconds\n", last_window, time_spent)
+    log_file.write(out_str)
+    echo out_str
 
 proc get_cur_window_name(): string =
     let xprop_active_window = osproc.execCmdEx("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW").output
@@ -51,5 +58,14 @@ proc get_cur_window_name(): string =
     let net_wm_name = osproc.execCmdEx(format("xprop -id $1 _NET_WM_NAME", window_id)).output;
 
     net_wm_name[29.. -3]
+
+proc leave() {.noconv.} =
+    let time_spent = times.getTime()-last_time
+    write_entry(last_window, time_spent, log_file)
+
+    quit 0
+
+setControlCHook(leave)
+addQuitProc(leave)
 
 main()
