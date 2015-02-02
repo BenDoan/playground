@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="battlecode-player">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/bin/Battlecode2015/lib/battlecode-player.jar!/" />
+      <root url="jar://$USER_HOME$/bin/Battlecode2015/lib/battlecode-client.jar!/" />
+      <root url="jar://$USER_HOME$/bin/Battlecode2015/lib/battlecode-server.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/bin/Battlecode2015/lib/battlecode-server.jar!/" />
+    </SOURCES>
+  </library>
+</component>
