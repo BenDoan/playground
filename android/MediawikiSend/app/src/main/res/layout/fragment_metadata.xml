@@ -1,0 +1,22 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+    <EditText android:id="@+id/edit_message"
+        android:layout_weight="1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hello_world"
+        android:maxLines="1"
+        android:lines="1"
+        android:inputType="textEmailSubject"/>
+
+    <Button android:id="@+id/button_send"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/hello_world"
+        android:onClick="sendMessage" />
+
+
+</FrameLayout>
