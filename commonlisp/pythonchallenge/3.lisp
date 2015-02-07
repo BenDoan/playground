@@ -1,0 +1,8 @@
+(with-open-file (stream "3.txt")
+ (do ((char (read-char stream nil)
+            (read-char stream nil)))
+     ((null char))
+ (let ((i (char-code char)))
+    (if (and (>= i 97) (<= i 122))
+      (format t "~D" (code-char i))))))
+(format t "~%")
