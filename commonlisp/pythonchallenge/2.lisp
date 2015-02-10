@@ -3,7 +3,7 @@
     do (format t "~D"
          (let ((i (char-code c)))
            (cond
-             ((and (>= i 97) (<= i 120)) (format nil "~A" (code-char (+ 2 i))))
+             ((and (>= i 97) (<= i 120)) (format nil "~A" (code-char (+ i 2))))
              ((or (= i 121) (= i 122)) (format nil "~A" (code-char (- i 24))))
              (t " "))))))
 

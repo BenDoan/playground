@@ -16,21 +16,30 @@ import docopt
 import os
 import osproc
 import re
-import strutils
-import subexes
 import times
 
 proc get_cur_window_name(): string
-proc write_entry(last_window: string, time_spent: int64, log_file: File)
+proc write_entry(last_window: string, time_spent: int, log_file: File)
+proc get_idle_time(): int
 
-let LOG_NAME = expandTilde("~/.novis-log")
+let args = docopt(doc, version="0.0.1")
+
+if args["--output"]:
+    let LOG_NAME = expandTilde(args["--output"])
+else:
+    let LOG_NAME = expandTilde("~/.novis-log")
+
+if args["--min-idle-time"]:
+    let MIN_IDLE_TIME = args["--min-idle-time"]
+else:
+    let MIN_IDLE_TIME = 500000 # 5 minutes
+
+
 let SLEEP_TIME = 500
 
 var log_file = open(LOG_NAME, fmAppend)
 var last_window = ""
 var last_time = times.getTime()
-
-let args = docopt(doc, version="0.0.1")
 
 proc main() =
     while true:
@@ -46,8 +55,8 @@ proc main() =
         last_window = cur_window
         os.sleep(SLEEP_TIME)
 
-proc write_entry(last_window: string, time_spent: int64, log_file: File) =
-    let out_str = format("$1, $2 seconds\n", last_window, time_spent)
+proc write_entry(last_window: string, time_spent: int, log_file: File) =
+    let out_str = format("$#, $# seconds\n", last_window, time_spent)
     log_file.write(out_str)
     echo out_str
 
@@ -58,6 +67,9 @@ proc get_cur_window_name(): string =
     let net_wm_name = osproc.execCmdEx(format("xprop -id $1 _NET_WM_NAME", window_id)).output;
 
     net_wm_name[29.. -3]
+
+proc get_idle_time(): int =
+    parseInt(osproc.execCmdEx("xprintidle").output)
 
 proc leave() {.noconv.} =
     let time_spent = times.getTime()-last_time
