@@ -40,27 +40,21 @@ object RobotPlayer {
   }
 
   def run_beaver(rc: RobotController): Unit ={
-    val num_barracks = rc.getTeamMemory()(comm_types.indexOf(RobotType.BARRACKS))
-
-    if (rc.isWeaponReady()){
-      attack_closest(rc)
-    }
-
-    if (rc.isCoreReady()) {
-      if (rc.getTeamOre() < 300 || num_barracks >= MAX_BARRACKS) {
-        rc.mine()
+      if (rc.isWeaponReady()) {
+        attack_closest(rc)
       }
-
-      if (rc.getTeamOre() >= 300 && num_barracks < MAX_BARRACKS) {
-        rc.build(Direction.NORTH, RobotType.BARRACKS)
-        rc.getTeamMemory()(comm_types.indexOf(RobotType.BARRACKS)) += 1
+      if (rc.isCoreReady()) {
+        val fate = r.nextInt(1000);
+        if (fate < 8 && rc.getTeamOre() >= 300) {
+          tryBuild(rc, directions(r.nextInt(8)),RobotType.BARRACKS);
+        } else if (fate < 600) {
+          rc.mine();
+        } else if (fate < 900) {
+          tryMove(rc, directions(r.nextInt(8)));
+        } else {
+          tryMove(rc, rc.senseHQLocation().directionTo(rc.getLocation()));
+        }
       }
-
-      val d = directions(r.nextInt(8))
-      if (rc.canMove(d)) {
-        rc.move(d)
-      }
-    }
   }
 
   def run_tower(rc: RobotController): Unit ={
@@ -83,5 +77,48 @@ object RobotPlayer {
       rc.attackLocation(enemies(0).location)
     }
   }
+
+  def tryBuild(rc: RobotController, d: Direction, t: RobotType){
+    var offsetIndex = 0;
+    val offsets = List(0,1,-1,2,-2,3,-3,4)
+    val dirint = directionToInt(d);
+
+    offsets(offsetIndex) + 1
+    while (offsetIndex < 8 && !rc.canMove(directions(dirint + offsets(offsetIndex) + 8 % 8))) {
+      offsetIndex += 1;
+    }
+    if (offsetIndex < 8) {
+      rc.build(directions((dirint + offsets(offsetIndex) + 8) % 8), t)
+    }
+  }
+
+  def tryMove(rc: RobotController, d: Direction) {
+    var offsetIndex = 0;
+    val offsets = List(0,1,-1,2,-2,3,-3,4)
+    val dirint = directionToInt(d);
+
+    while (offsetIndex < 5 && !rc.canMove(directions((dirint + offsets(offsetIndex) + 8) % 8))) {
+      offsetIndex += 1;
+    }
+    if (offsetIndex < 5) {
+      rc.move(directions((dirint+offsets(offsetIndex)+8)%8));
+    }
+  }
+
+
+  def directionToInt(d: Direction): Int ={
+    d match {
+      case Direction.NORTH => 0
+      case Direction.NORTH_EAST => 1
+      case Direction.EAST => 2
+      case Direction.SOUTH_EAST => 3
+      case Direction.SOUTH => 4
+      case Direction.SOUTH_WEST => 5
+      case Direction.WEST => 6
+      case Direction.NORTH_WEST => 7
+      case _ => -1
+    }
+  }
+
 
 }
