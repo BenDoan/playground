@@ -30,7 +30,7 @@ else:
     let LOG_NAME = expandTilde("~/.novis-log")
 
 if args["--min-idle-time"]:
-    let MIN_IDLE_TIME = args["--min-idle-time"]
+    let MIN_IDLE_TIME = parseInt(args["--min-idle-time"])
 else:
     let MIN_IDLE_TIME = 500000 # 5 minutes
 
@@ -45,7 +45,7 @@ proc main() =
     while true:
         let cur_window = get_cur_window_name()
 
-        if last_window != cur_window and last_window != "":
+        if last_window != cur_window and last_window != "" and get_idle_time() < MIN_IDLE_TIME:
             let time = times.getTime()
             let time_spent = time-last_time
             write_entry(last_window, time_spent, log_file)
