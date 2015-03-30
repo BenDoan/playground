@@ -12,3 +12,5 @@ golang/bin/*
 golang/pkg/*
 golang/projects/*
 
+golang/src/github.com/op
+golang/src/golang.org
