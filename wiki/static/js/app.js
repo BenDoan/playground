@@ -5,6 +5,10 @@ var app = angular.module('wiki', ['ui.bootstrap', 'ngRoute', 'wikiServices']).
             templateUrl: 'partials/index.html',
             controller: 'MainCtrl'
         }).
+        when('/article/:title/edit', {
+            templateUrl: 'partials/edit.html',
+            controller: 'ArticleCtrl'
+        }).
         when('/article/:title', {
             templateUrl: 'partials/article.html',
             controller: 'ArticleCtrl'
@@ -27,8 +31,24 @@ app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location',
         $http({method: 'GET', url: '/article?title='+title}).
         success(function(data, status, headers, config) {
             $scope.body = data;
+            $scope.article = {
+                title: title,
+                body: data
+            }
         }).
         error(function(data, status, headers, config) {
             $scope.body = "Couldn't find"
         });
+
+        $scope.update = function(article){
+            $scope.val = angular.copy(article)
+
+            $http.put('/article', {title: "hello", body: "newcontent"}).
+            success(function(data, status, headers, config) {
+                console.log("success")
+            }).
+            error(function(data, status, headers, config) {
+                console.log("failure")
+            });
+        };
     }]);

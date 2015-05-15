@@ -34,7 +34,9 @@ func Article(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		GetArticle(w, r)
 	case "PUT":
-		PutArticle(w, r)
+		CreateArticle(w, r)
+	case "POST":
+		CreateArticle(w, r)
 	}
 }
 
@@ -52,13 +54,12 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(body))
 }
 
-func PutArticle(w http.ResponseWriter, r *http.Request) {
-	title := r.FormValue("title")
-	body := r.FormValue("body")
+func CreateArticle(w http.ResponseWriter, r *http.Request) {
+	title := r.Form.Get("title")
+	body := r.Form.Get("body")
 
 	fmt.Printf("writing %s:%s", title, body)
 	ioutil.WriteFile("data/"+title, []byte(body), 0644)
-
 }
 
 func setup() {
