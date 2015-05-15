@@ -23,21 +23,27 @@ app.controller("MainCtrl", ['$scope', 'Articles', function($scope, Articles){
     $scope.articles = Articles.query();
 }]);
 
-app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location',
-    function($scope, $http, $routeParams, $location){
+app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location', '$sce',
+    function($scope, $http, $routeParams, $location, $sce){
         title = $routeParams.title;
         $scope.title = title;
 
         $http({method: 'GET', url: '/article?title='+title}).
         success(function(data, status, headers, config) {
+            console.log(data.body)
             $scope.body = data;
             $scope.article = {
                 title: title,
-                body: data
+                body: data,
+                html_body: data
             }
         }).
         error(function(data, status, headers, config) {
             $scope.body = "Couldn't find"
+            $scope.article = {
+                title: title,
+                body: ""
+            }
         });
 
         $scope.update = function(article){
@@ -47,10 +53,16 @@ app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location',
                 params: {title: article.title, body: article.body}
             }).
             success(function(data, status, headers, config) {
-                console.log("success")
+                console.log("success");
             }).
             error(function(data, status, headers, config) {
-                console.log("failure")
+                console.log("failure");
             });
+
+            $location.path("/article/"+title);
         };
+
+        $scope.getHtmlBody = function(){
+            return $sce.trustAsHtml($scope.body);
+        }
     }]);

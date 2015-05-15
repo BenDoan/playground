@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	//"net/url"
 )
 
 var (
@@ -30,6 +32,8 @@ func getAllArticles(w http.ResponseWriter, r *http.Request) {
 
 func Article(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	b, _ := ioutil.ReadAll(r.Body)
+	fmt.Println(string(b))
 	switch r.Method {
 	case "GET":
 		GetArticle(w, r)
@@ -43,7 +47,7 @@ func Article(w http.ResponseWriter, r *http.Request) {
 func GetArticle(w http.ResponseWriter, r *http.Request) {
 	title := r.Form.Get("title")
 	body, err := ioutil.ReadFile("data/" + title)
-
+	var _ = body
 	if err != nil {
 		fmt.Printf("Couldn't find file '%s'", title)
 		w.WriteHeader(400)
@@ -51,7 +55,7 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 		// handle error
 	}
 
-	fmt.Fprintf(w, string(body))
+	fmt.Fprintf(w, string(blackfriday.MarkdownCommon(body)))
 }
 
 func CreateArticle(w http.ResponseWriter, r *http.Request) {
