@@ -46,16 +46,24 @@ func Article(w http.ResponseWriter, r *http.Request) {
 
 func GetArticle(w http.ResponseWriter, r *http.Request) {
 	title := r.Form.Get("title")
+	format := r.Form.Get("format")
+
 	body, err := ioutil.ReadFile("data/" + title)
-	var _ = body
 	if err != nil {
 		fmt.Printf("Couldn't find file '%s'", title)
-		w.WriteHeader(400)
+		w.WriteHeader(500)
 		return
 		// handle error
 	}
 
-	fmt.Fprintf(w, string(blackfriday.MarkdownCommon(body)))
+	switch format {
+	case "markdown":
+		fmt.Fprintf(w, string(body))
+	case "html":
+		fmt.Fprintf(w, string(blackfriday.MarkdownCommon(body)))
+	default:
+		log.Printf("Invalid format type: '%s'", format)
+	}
 }
 
 func CreateArticle(w http.ResponseWriter, r *http.Request) {

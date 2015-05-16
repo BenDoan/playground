@@ -7,11 +7,11 @@ var app = angular.module('wiki', ['ui.bootstrap', 'ngRoute', 'wikiServices']).
         }).
         when('/article/:title/edit', {
             templateUrl: 'partials/edit.html',
-            controller: 'ArticleCtrl'
+            controller: 'ArticleEditCtrl'
         }).
         when('/article/:title', {
             templateUrl: 'partials/article.html',
-            controller: 'ArticleCtrl'
+            controller: 'ArticleViewCtrl'
         }).
         otherwise({
             redirectTo: '/'
@@ -23,14 +23,38 @@ app.controller("MainCtrl", ['$scope', 'Articles', function($scope, Articles){
     $scope.articles = Articles.query();
 }]);
 
-app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location', '$sce',
+app.controller("ArticleViewCtrl", ['$scope', '$http', '$routeParams', '$location', '$sce',
     function($scope, $http, $routeParams, $location, $sce){
         title = $routeParams.title;
         $scope.title = title;
 
-        $http({method: 'GET', url: '/article?title='+title}).
+        $http({method: 'GET', url: '/article?format=html&title='+title}).
         success(function(data, status, headers, config) {
-            console.log(data.body)
+            $scope.body = data;
+            $scope.article = {
+                title: title,
+                body: data
+            }
+        }).
+        error(function(data, status, headers, config) {
+            $scope.body = "Couldn't find"
+            $scope.article = {
+                title: title,
+                body: ""
+            }
+        });
+        $scope.getHtmlBody = function(){
+            return $sce.trustAsHtml($scope.body);
+        }
+}]);
+
+app.controller("ArticleEditCtrl", ['$scope', '$http', '$routeParams', '$location', '$sce',
+    function($scope, $http, $routeParams, $location, $sce){
+        title = $routeParams.title;
+        $scope.title = title;
+
+        $http({method: 'GET', url: '/article?format=markdown&title='+title}).
+        success(function(data, status, headers, config) {
             $scope.body = data;
             $scope.article = {
                 title: title,
@@ -61,8 +85,4 @@ app.controller("ArticleCtrl", ['$scope', '$http', '$routeParams', '$location', '
 
             $location.path("/article/"+title);
         };
-
-        $scope.getHtmlBody = function(){
-            return $sce.trustAsHtml($scope.body);
-        }
     }]);
