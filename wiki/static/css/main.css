@@ -5,3 +5,8 @@ div.content {
 .body, .box{
     width:100%;
 }
+
+textarea {
+    box-sizing: border-box
+    width: 100%;
+}

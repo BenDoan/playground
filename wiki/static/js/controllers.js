@@ -26,7 +26,7 @@ app.controller("ArticleViewCtrl", ['$scope',
 
 }]);
 
-app.controller("ArticleEditCtrl", ['$scope',
+app.controller('ArticleEditCtrl', ['$scope',
                                    '$routeParams',
                                    '$location',
                                    '$window',
@@ -45,14 +45,14 @@ app.controller("ArticleEditCtrl", ['$scope',
             error(function(data, status, headers, config) {
                 $scope.article = {
                     title: title,
-                    body: ''
+                    body: null
                 }
             });
 
         $scope.update = function(article){
             ArticleFactory.updateArticle(article).
                 success(function(data, status, headers, config) {
-                    $location.path("/"+title);
+                    $scope.viewArticle()
                 }).
                 error(function(data, status, headers, config) {
                     console.log("Couldn't update article");
@@ -60,8 +60,7 @@ app.controller("ArticleEditCtrl", ['$scope',
 
         };
 
-        $scope.goBack = function() {
-            $window.history.back();
+        $scope.viewArticle = function() {
+            $location.path('/'+title);
         };
     }]);
-
