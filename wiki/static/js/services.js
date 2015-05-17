@@ -1,18 +1,18 @@
-var wikiServices =
-    angular.module('wikiServices', ['ngResource']);
+app.factory('ArticleFactory', ["$http", function ArticleFactory($http){
+    var exports = {};
 
-wikiServices.factory('Articles', ['$resource',
-    function($resource){
-        return $resource('/articles', {}, {
-            query: {method: 'GET', isArray:false}}
-        )
-    }
-])
+    exports.getArticle = function(format, title){
+        url = '/article?format=' + format + '&title=' + title
+        return $http({method: 'GET', url: url})
+    };
 
-wikiServices.factory('Article', ['$resource',
-    function($resource){
-        return $resource('/article?title=:title', {title: '@title'}, {
-            query: {method: 'GET', isArray:false}}
-        )
-    }
-])
+    exports.updateArticle = function(article){
+        return $http({
+                method: 'put',
+                url: '/article',
+                params: article
+            })
+    };
+
+    return exports;
+}]);

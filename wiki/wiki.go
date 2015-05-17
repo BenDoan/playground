@@ -1,19 +1,17 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"net/url"
+	"regexp"
 )
 
 var (
-	listen   = ":8080"
-	articles = make(map[string]map[string]string)
+	listen = ":8080"
 )
 
 var templates = template.Must(template.ParseFiles("templates/base.html"))
@@ -25,15 +23,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAllArticles(w http.ResponseWriter, r *http.Request) {
-	j, _ := json.Marshal(articles)
-	fmt.Fprintf(w, string(j))
-}
-
 func Article(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	b, _ := ioutil.ReadAll(r.Body)
-	fmt.Println(string(b))
 	switch r.Method {
 	case "GET":
 		GetArticle(w, r)
@@ -60,7 +51,10 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 	case "markdown":
 		fmt.Fprintf(w, string(body))
 	case "html":
-		fmt.Fprintf(w, string(blackfriday.MarkdownCommon(body)))
+		rp := regexp.MustCompile(`\[\[([a-z]+)\]\]`)
+		body_s := rp.ReplaceAllString(string(body), `<a href="/$1">$1</a>`)
+
+		fmt.Fprintf(w, string(blackfriday.MarkdownCommon([]byte(body_s))))
 	default:
 		log.Printf("Invalid format type: '%s'", format)
 	}
@@ -70,28 +64,15 @@ func CreateArticle(w http.ResponseWriter, r *http.Request) {
 	title := r.Form.Get("title")
 	body := r.Form.Get("body")
 
-	fmt.Printf("writing %s:%s", title, body)
 	ioutil.WriteFile("data/"+title, []byte(body), 0644)
 }
 
-func setup() {
-	articles["hello"] = map[string]string{
-		"title":    "This is an article",
-		"contents": "Hello world!",
-	}
-}
-
 func main() {
-	setup()
-
 	http.HandleFunc("/", handler)
-	http.HandleFunc("/articles", getAllArticles)
 	http.HandleFunc("/article", Article)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.Handle("/partials/", http.StripPrefix("/partials/", http.FileServer(http.Dir("./partials/"))))
-
-	fmt.Printf("")
 
 	log.Println("Listening on", listen)
 	http.ListenAndServe(listen, nil)

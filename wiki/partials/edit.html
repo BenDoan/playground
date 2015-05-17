@@ -1,8 +1,7 @@
-<h1>{{ title }}</h1>
+<h2>{{ article.title }}</h2>
 <form novalidate>
     <textarea name="" cols="100" rows="10" ng-model="article.body"></textarea>
     <br>
     <input value="Submit" class="btn btn-primary" type="submit" ng-click="update(article)">
+    <button class="button" ng-click="goBack()">Cancel</button>
 </form>
-
-<p>{{ val | json }}</p>

@@ -6,10 +6,9 @@
   "license": "MIT",
   "dependencies": {
     "angular": "~1.4.0",
-    "angular-bootstrap": "0.12.1",
-    "bootstrap": "3.3.4",
     "angular-route": "~1.4.0",
-    "angular-resource": "~1.4.0"
+    "angular-resource": "~1.4.0",
+    "jquery": "2.1.4"
   },
   "devDependencies": {}
 }
