@@ -10,7 +10,7 @@ app.factory('ArticleFactory', ["$http", function ArticleFactory($http){
         return $http({
                 method: 'put',
                 url: '/article',
-                params: article
+                data: article
             })
     };
 

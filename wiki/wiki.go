@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
@@ -17,14 +18,14 @@ var (
 
 var templates = template.Must(template.ParseFiles("templates/base.html"))
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func angularHandler(w http.ResponseWriter, r *http.Request) {
 	err := templates.ExecuteTemplate(w, "base.html", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func Article(w http.ResponseWriter, r *http.Request) {
+func HandleArticle(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	switch r.Method {
 	case "GET":
@@ -40,8 +41,7 @@ func GetArticle(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadFile("data/" + title)
 	if err != nil {
-		fmt.Printf("Couldn't find file '%s'", title)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -68,22 +68,39 @@ func renderMarkdown(body []byte) []byte {
 
 func processMarkdown(text []byte) []byte {
 	// create wiki links
-	rp := regexp.MustCompile(`\[\[([a-z]+)\]\]`)
+	rp := regexp.MustCompile(`\[\[([a-zA-z0-9_]+)\]\]`)
 	body_s := rp.ReplaceAll(text, []byte(`<a href="/$1">$1</a>`))
 
 	return body_s
 }
 
-func CreateArticle(w http.ResponseWriter, r *http.Request) {
-	title := r.Form.Get("title")
-	body := r.Form.Get("body")
+type Article struct {
+	Title string
+	Body  string
+}
 
-	ioutil.WriteFile("data/"+title, []byte(body), 0644)
+func CreateArticle(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var article Article
+	err := decoder.Decode(&article)
+
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	err = ioutil.WriteFile("data/"+article.Title, []byte(article.Body), 0644)
+
+	if err != nil {
+		log.Printf("Error saving file: %s", err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.HandleFunc("/article", Article)
+	http.HandleFunc("/", angularHandler)
+	http.HandleFunc("/article", HandleArticle)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.Handle("/partials/", http.StripPrefix("/partials/", http.FileServer(http.Dir("./partials/"))))
