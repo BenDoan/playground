@@ -18,3 +18,7 @@ textarea {
     box-sizing: border-box
     width: 100%;
 }
+
+a.wikilink-new {
+    color: red;
+}

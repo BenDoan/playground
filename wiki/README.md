@@ -1,2 +1,4 @@
-# competition
-Web based programming contest software
+# wiki
+File based personal wiki.
+
+Currently under development.
