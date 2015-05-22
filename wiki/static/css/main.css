@@ -8,17 +8,30 @@ p {
 
 div.content {
     margin:1em;
-}
-
-c {
     width:100%;
 }
 
-textarea {
-    box-sizing: border-box
+div.content > div {
+    width:100%;
+}
+
+form.edit {
     width: 100%;
+    height: 100%;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 a.wikilink-new {
     color: red;
+}
+
+#loading-bar .bar {
+  background: #2c3e50;
 }
