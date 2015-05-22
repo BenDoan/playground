@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -77,5 +79,31 @@ func TestGetArticleMissing(t *testing.T) {
 
 	if resp.Code != http.StatusNotFound {
 		t.Errorf("Failed to return error code")
+	}
+}
+
+func GetRandomString() string {
+	size := 25
+	dict := "abcdefghijklmnopqrstuvwxyz"
+
+	bytes := make([]byte, size)
+	rand.Read(bytes)
+
+	for k, v := range bytes {
+		bytes[k] = dict[v%byte(len(dict))]
+	}
+
+	return string(bytes)
+}
+
+func BenchmarkCreation(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		json := fmt.Sprintf(`{"title": "test%s", "body": "this is body"}`, GetRandomString())
+		reader := strings.NewReader(json)
+
+		req, _ := http.NewRequest("PUT", "/article", reader)
+		resp := httptest.NewRecorder()
+
+		HandleArticle(resp, req)
 	}
 }
