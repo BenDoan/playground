@@ -26,7 +26,7 @@ else
     print("Couldn't find wifilogin.txt")
 end
 
-tmr.alarm(2, 5000, 0, function()
+tmr.alarm(2, 6000, 0, function()
     if file.list()["main.lua"] then
         print("Running main.lua")
         dofile("main.lua")

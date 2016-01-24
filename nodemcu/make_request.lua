@@ -1,14 +1,24 @@
-function get_request(site, path, fun)
+function get_request(site, path, fun, method, port)
+    local method = method
+    if not method then
+        method = "GET"
+    end
+
+    local port = port
+    if not port then
+        port = 80
+    end
+
     conn = net.createConnection(net.TCP, 0)
     conn:on("receive", fun)
 
     conn:dns(site, function(conn2, ip)
-        conn:connect(80, ip)
+        conn:connect(port, ip)
         conn:send("GET "..path.." HTTP/1.1\r\nHost: "..site.."\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
     end)
-
 end
 
-get_request("www.bendoan.me", "/", function(conn, payload)
+print("Making web request request")
+get_request("flainted.com", "/", function(conn, payload)
     print(payload)
-end)
+end, "GET", 5000)
