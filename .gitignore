@@ -14,3 +14,6 @@ golang/projects/*
 
 golang/src/github.com/op
 golang/src/golang.org
+
+__pycache__
+*.pyc
