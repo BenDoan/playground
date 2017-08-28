@@ -1,0 +1,13 @@
+[package]
+name = "livia2"
+version = "0.1.0"
+authors = ["Ben Doan <ben@bendoan.me>"]
+
+[dependencies]
+nickel = "*"
+time = "*"
+rustc-serialize = "*"
+
+[dependencies.postgres]
+version = "0.11"
+features = ["time"]
