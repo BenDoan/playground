@@ -11,11 +11,11 @@ fun main(args: Array<String>) {
         .filter({ !it.endsWith("'s") })
     val numOccurrences = calcNumOccurrences(words)
     println("""
-              |#IE:             ${numOccurrences.numIe}
-              |#IE after c:     ${numOccurrences.numIeIncorrect}
-              |
-              |#EI:             ${numOccurrences.numEi}
-              |#EI not after c: ${numOccurrences.numEiIncorrect}""".trimMargin())
+        |#IE:             ${numOccurrences.numIe}
+        |#IE after c:     ${numOccurrences.numIeIncorrect}
+        |
+        |#EI:             ${numOccurrences.numEi}
+        |#EI not after c: ${numOccurrences.numEiIncorrect}""".trimMargin())
 }
 
 fun calcNumOccurrences(words: List<String>): NumOccurrences {

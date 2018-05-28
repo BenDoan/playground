@@ -1,6 +1,6 @@
 import os
 
-from lib.bottle import route, run
+from lib.bottle import route, run, default_app
 
 from hue_api import HueAPI
 
@@ -25,4 +25,7 @@ def all_off():
     api.set_groups(False)
     return "Good"
 
-run(host='0.0.0.0', port=9090, debug=True)
+if __name__ == '__main__':
+    run(host='0.0.0.0', port=9090, debug=True)
+
+app = default_app()

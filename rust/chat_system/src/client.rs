@@ -54,19 +54,14 @@ fn start_ui(gui_receiver: mpsc::Receiver<ChatMessage>, addr: String, username: S
 
     let edit_view = EditView::new()
         .on_submit(move |s, msg_str| {
-            send_chat_message(
-                s,
-                msg_str,
-                addr.clone(),
-                username.clone()
-            ).unwrap()
+            send_chat_message(s, msg_str, addr.clone(), username.clone()).unwrap()
         })
         .with_id("edit");
 
     let layout = Dialog::new().title("Chat").content(
         LinearLayout::vertical()
             .child(text_view)
-            .child(edit_view)
+            .child(edit_view),
     );
 
     siv.add_layer(layout);
@@ -146,7 +141,13 @@ mod tests {
         write_line(&mut stream, msg.clone()).unwrap();
 
         // verify message received from listener
-        assert_eq!(&rx.recv().unwrap(), &ChatMessage {author: "Author".into(), text: "Hello".into()});
+        assert_eq!(
+            &rx.recv().unwrap(),
+            &ChatMessage {
+                author: "Author".into(),
+                text: "Hello".into(),
+            }
+        );
     }
 
     #[test]
