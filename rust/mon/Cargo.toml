@@ -1,0 +1,12 @@
+[package]
+name = "mon"
+version = "0.1.0"
+authors = ["Ben Doan <ben@bendoan.me>"]
+
+[dependencies]
+lettre = "0.8"
+lettre_email = "0.8"
+serde = "1.0.69"
+serde_json = "1.0.22"
+serde_derive = "1.0.69"
+reqwest = "0.8.6"
