@@ -1,13 +1,13 @@
 pub type Program = Vec<Stmt>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub identifier: String,
     pub sub_arrays: Vec<i32>,
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Binary(Operator, Box<Expr>, Box<Expr>),
     Unary(Operator, Box<Expr>),
@@ -18,7 +18,7 @@ pub enum Expr {
     FunctionCall(String, Vec<Expr>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     Block(Vec<Stmt>),
     If(Expr, Box<Stmt>),
@@ -32,7 +32,7 @@ pub enum Stmt {
     Declaration(Vec<Parameter>),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operator {
     Ref,
     Deref,

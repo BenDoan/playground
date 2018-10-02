@@ -5,7 +5,7 @@ pub mod ast;
 
 use std::io;
 use std::io::BufRead;
-use ast::{Program, Parameter, Stmt, Expr};
+use ast::{Program, Parameter, Stmt, Expr, Operator};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -89,7 +89,7 @@ fn ast_to_str(program: &Program) -> String {
             Stmt::Block(ss) => {
                 ss.iter()
                     .map(|s| traverse_stmt(s, level + 1))
-                    .collect::<Vec<String>>()
+                    .collect::<Vec<_>>()
                     .join("")
             }
             Stmt::If(e, s) => {
@@ -151,9 +151,7 @@ fn ast_to_str(program: &Program) -> String {
                 format!(
                     "{}({})",
                     s,
-                    es.iter().map(traverse_expr).collect::<Vec<String>>().join(
-                        ", ",
-                    )
+                    es.iter().map(traverse_expr).collect::<Vec<_>>().join(", ")
                 )
             }
         }
@@ -162,7 +160,7 @@ fn ast_to_str(program: &Program) -> String {
         parameters
             .iter()
             .map(|p| format!("int {}", p.identifier))
-            .collect::<Vec<String>>()
+            .collect::<Vec<_>>()
             .join(", ")
     }
 
@@ -172,4 +170,224 @@ fn ast_to_str(program: &Program) -> String {
 
 fn get_indent(level: usize) -> String {
     "  ".repeat(level).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_number() {
+        assert_eq!(
+            parser::ExprParser::new().parse("1").unwrap(),
+            Expr::Number(1)
+        );
+    }
+
+    #[test]
+    fn test_string() {
+        assert_eq!(
+            parser::ExprParser::new().parse("\"test\"").unwrap(),
+            Expr::Str("test".to_string())
+        );
+    }
+
+    #[test]
+    fn test_identifier() {
+        assert_eq!(
+            parser::ExprParser::new().parse("test").unwrap(),
+            Expr::Identifier("test".to_string())
+        );
+    }
+
+    #[test]
+    fn test_binary_expr() {
+        assert_eq!(
+            parser::ExprParser::new().parse("1 + 2").unwrap(),
+            Expr::Binary(
+                Operator::Add,
+                Box::new(Expr::Number(1)),
+                Box::new(Expr::Number(2)),
+            )
+        );
+    }
+
+    #[test]
+    fn test_unary_expr() {
+        assert_eq!(
+            parser::ExprParser::new().parse("1++").unwrap(),
+            Expr::Unary(Operator::PostIncr, Box::new(Expr::Number(1)))
+        );
+    }
+
+    #[test]
+    fn test_block() {
+        assert_eq!(
+            parser::StatementParser::new().parse("{ }").unwrap(),
+            Stmt::Block(vec![])
+        );
+
+        assert_eq!(
+            parser::StatementParser::new().parse("{ 1; 2; }").unwrap(),
+            Stmt::Block(vec![
+                Stmt::Expr(Expr::Number(1)),
+                Stmt::Expr(Expr::Number(2)),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_if() {
+        assert_eq!(
+            parser::StatementParser::new().parse("if (1) {}").unwrap(),
+            Stmt::If(Expr::Number(1), Box::new(Stmt::Block(vec![])))
+        );
+    }
+
+    #[test]
+    fn test_while() {
+        assert_eq!(
+            parser::StatementParser::new()
+                .parse("while (1) {}")
+                .unwrap(),
+            Stmt::While(Expr::Number(1), Box::new(Stmt::Block(vec![])))
+        );
+    }
+
+    #[test]
+    fn test_for() {
+        assert_eq!(
+            parser::StatementParser::new()
+                .parse("for(i = 1; i < 1; i++) {} ")
+                .unwrap(),
+            Stmt::For(
+                Expr::Assignment(
+                    Box::new(Expr::Identifier("i".to_string())),
+                    Box::new(Expr::Number(1)),
+                ),
+                Expr::Binary(
+                    Operator::Less,
+                    Box::new(Expr::Identifier("i".to_string())),
+                    Box::new(Expr::Number(1)),
+                ),
+                Expr::Unary(
+                    Operator::PostIncr,
+                    Box::new(Expr::Identifier("i".to_string())),
+                ),
+                Box::new(Stmt::Block(vec![])),
+            )
+        );
+    }
+
+    #[test]
+    fn test_return() {
+        assert_eq!(
+            parser::StatementParser::new().parse("return 1;").unwrap(),
+            Stmt::Return(Expr::Number(1))
+        );
+    }
+
+    #[test]
+    fn test_read() {
+        assert_eq!(
+            parser::StatementParser::new().parse("read(test);").unwrap(),
+            Stmt::Read("test".to_string())
+        );
+    }
+
+    #[test]
+    fn test_write() {
+        assert_eq!(
+            parser::StatementParser::new().parse("write(1);").unwrap(),
+            Stmt::Write(Expr::Number(1))
+        );
+    }
+
+    #[test]
+    fn test_expr_stmt() {
+        assert_eq!(
+            parser::StatementParser::new().parse("1;").unwrap(),
+            Stmt::Expr(Expr::Number(1))
+        );
+    }
+
+    #[test]
+    fn test_assignment() {
+        assert_eq!(
+            parser::ExprParser::new().parse("i = 1").unwrap(),
+            Expr::Assignment(
+                Box::new(Expr::Identifier("i".to_string())),
+                Box::new(Expr::Number(1)),
+            )
+        );
+    }
+
+    #[test]
+    fn test_function_call() {
+        assert_eq!(
+            parser::StatementParser::new().parse("foo();").unwrap(),
+            Stmt::Expr(Expr::FunctionCall("foo".to_string(), vec![]))
+        );
+
+        assert_eq!(
+            parser::StatementParser::new().parse("foo(i, j);").unwrap(),
+            Stmt::Expr(Expr::FunctionCall(
+                "foo".to_string(),
+                vec![
+                    Expr::Identifier("i".to_string()),
+                    Expr::Identifier("j".to_string()),
+                ],
+            ))
+        );
+    }
+
+    #[test]
+    fn test_declaration() {
+        assert_eq!(
+            parser::DeclarationParser::new()
+                .parse("int i[1][2], j[3][4];")
+                .unwrap(),
+            Stmt::Declaration(vec![
+                Parameter {
+                    identifier: "i".to_string(),
+                    sub_arrays: vec![1, 2],
+                },
+                Parameter {
+                    identifier: "j".to_string(),
+                    sub_arrays: vec![3, 4],
+                },
+            ])
+        );
+    }
+
+    #[test]
+    fn test_function_declaration() {
+        assert_eq!(
+            parser::ExternalDeclarationParser::new()
+                .parse("int foo() {}")
+                .unwrap(),
+            Stmt::Function("foo".to_string(), vec![], Box::new(Stmt::Block(vec![])))
+        );
+
+        assert_eq!(
+            parser::ExternalDeclarationParser::new()
+                .parse("int foo(int i, int j[]) {}")
+                .unwrap(),
+            Stmt::Function(
+                "foo".to_string(),
+                vec![
+                    Parameter {
+                        identifier: "i".to_string(),
+                        sub_arrays: vec![],
+                    },
+                    Parameter {
+                        identifier: "j".to_string(),
+                        sub_arrays: vec![-1],
+                    },
+                ],
+                Box::new(Stmt::Block(vec![])),
+            )
+        );
+    }
+
 }

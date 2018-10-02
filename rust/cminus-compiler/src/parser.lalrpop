@@ -84,11 +84,6 @@ pub AssignmentExpr: Expr = {
     <LogicalOrExpr>,
 }
 
-//pub SubsAssignment: Expr = {
-//    <i: Identifier> <s: Subs> "=" <e: LogicalOrExpr> => Expr::Assignment(Parameter { identifier: i, sub_arrays: s }, Box::new(e)),
-//    <i: Identifier> <s: Subs> "=" <f: FunctionCall> => Expr::Assignment(Parameter { identifier: i, sub_arrays: s }, Box::new(f)),
-//}
-
 pub LogicalOrExpr: Expr = {
     <e1: LogicalAndExpr> "||" <e2: LogicalOrExpr> => Expr::Binary(Operator::LogicalOr, Box::new(e1), Box::new(e2)),
     <LogicalAndExpr>,
