@@ -1,0 +1,12 @@
+[package]
+name = "hello-actix"
+version = "0.1.0"
+authors = ["Ben Doan <ben@bendoan.me>"]
+
+[dependencies]
+env_logger = "0.5"
+actix = "0.5"
+actix-web = "^0.6"
+serde = "1.0.66"
+serde_json = "1.0.20"
+serde_derive = "1.0.66"
