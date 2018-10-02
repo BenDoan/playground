@@ -1,0 +1,175 @@
+grammar;
+
+use ast::{Program, Parameter, Expr, Stmt, Operator, push_to_vec};
+
+pub Program: Program = <ExternalDeclaration*>;
+
+pub ExternalDeclaration: Stmt = {
+    "int" <i: Identifier> "(" <ps: ParameterList> ")" <b: Block> => Stmt::Function(i, ps, Box::new(b)),
+    <Declaration>,
+};
+
+pub Declaration: Stmt = {
+    "int" <is: DeclIdentifierList> ";" => Stmt::Declaration(is),
+}
+
+pub Subs: Vec<i32> = {
+    "[" <Constant> "]" => vec![<>],
+    <s: Subs> "[" <c: Constant> "]" => push_to_vec(s, c),
+}
+
+pub PSubs: Vec<i32> = {
+    "[" "]" => vec![-1],
+    <p: PSubs> "[" "]" => push_to_vec(p, -1),
+}
+
+pub DeclIdentifierList: Vec<Parameter> = {
+    <d: DeclIdentifier> => vec![d],
+    <ds: DeclIdentifierList> "," <d: DeclIdentifier> => push_to_vec(ds, d),
+    () => vec![],
+}
+
+pub DeclIdentifier: Parameter = {
+    <i: Identifier> => Parameter { identifier: i, sub_arrays: vec![] },
+    <i: Identifier> <s: Subs> => Parameter { identifier: i, sub_arrays: s },
+}
+
+pub ParameterList: Vec<Parameter> = {
+    () => vec![],
+    <ps: ParameterList> "," <p: Parameter> => push_to_vec(ps, p),
+    <p: Parameter> => vec![p],
+}
+
+pub ExprList: Vec<Expr> = {
+    () => vec![],
+    <e: Expr> => vec![e],
+    <es: ExprList> "," <e: Expr> => push_to_vec(es, e),
+}
+
+pub Parameter: Parameter = {
+    "int" <i: Identifier> => Parameter { identifier: i, sub_arrays: vec![] },
+    "int" <s: PSubs> <i: Identifier> => Parameter { identifier: i, sub_arrays: s },
+    "int" <i: Identifier> <s: PSubs> => Parameter { identifier: i, sub_arrays: s },
+}
+
+pub Block: Stmt = {
+    "{" <sl: Statement*> "}" => Stmt::Block(sl),
+}
+
+pub FunctionCall: Expr = {
+    <f: Identifier> "(" <es: ExprList> ")" => Expr::FunctionCall(f, es),
+}
+
+pub Statement: Stmt = {
+    <Block>,
+    <Declaration>,
+    "if" "(" <e: Expr> ")" <s: Statement> => Stmt::If(e, Box::new(s)),
+    "while" "(" <e: Expr> ")" <s: Statement> => Stmt::While(e, Box::new(s)),
+    "for" "(" <e1: Expr> ";" <e2: Expr> ";" <e3: Expr> ")" <s: Statement> => Stmt::For(e1, e2, e3, Box::new(s)),
+    "return" <Expr> ";" => Stmt::Return(<>),
+    "read" "(" <Identifier> ")" ";" => Stmt::Read(<>),
+    "write" "(" <Expr> ")" ";" => Stmt::Write(<>),
+    <Expr> ";" => Stmt::Expr(<>),
+    <FunctionCall> ";" => Stmt::Expr(<>),
+}
+
+pub Expr: Expr = {
+    <AssignmentExpr>,
+}
+
+pub AssignmentExpr: Expr = {
+    <i: UnaryExpr> "=" <e: LogicalOrExpr> => Expr::Assignment(Box::new(i), Box::new(e)),
+    <i: UnaryExpr> "=" <f: FunctionCall> => Expr::Assignment(Box::new(i), Box::new(f)),
+    //<SubsAssignment>,
+    <LogicalOrExpr>,
+}
+
+//pub SubsAssignment: Expr = {
+//    <i: Identifier> <s: Subs> "=" <e: LogicalOrExpr> => Expr::Assignment(Parameter { identifier: i, sub_arrays: s }, Box::new(e)),
+//    <i: Identifier> <s: Subs> "=" <f: FunctionCall> => Expr::Assignment(Parameter { identifier: i, sub_arrays: s }, Box::new(f)),
+//}
+
+pub LogicalOrExpr: Expr = {
+    <e1: LogicalAndExpr> "||" <e2: LogicalOrExpr> => Expr::Binary(Operator::LogicalOr, Box::new(e1), Box::new(e2)),
+    <LogicalAndExpr>,
+}
+
+pub LogicalAndExpr: Expr = {
+    <e1: OrExpr> "&&" <e2: LogicalAndExpr> => Expr::Binary(Operator::LogicalAnd, Box::new(e1), Box::new(e2)),
+    <OrExpr>,
+}
+
+pub OrExpr: Expr = {
+    <e1: XorExpr> "|" <e2: OrExpr> => Expr::Binary(Operator::Or, Box::new(e1), Box::new(e2)),
+    <XorExpr>,
+}
+
+pub XorExpr: Expr = {
+    <e1: AndExpr> "^" <e2: XorExpr> => Expr::Binary(Operator::Xor, Box::new(e1), Box::new(e2)),
+    <AndExpr>,
+}
+
+pub AndExpr: Expr = {
+    <e1: EqExpr> "&" <e2: AndExpr> => Expr::Binary(Operator::And, Box::new(e1), Box::new(e2)),
+    <EqExpr>,
+}
+
+pub EqExpr: Expr = {
+    <e1: RelExpr> "==" <e2: EqExpr> => Expr::Binary(Operator::Equal, Box::new(e1), Box::new(e2)),
+    <e1: RelExpr> "!=" <e2: EqExpr> => Expr::Binary(Operator::NotEqual, Box::new(e1), Box::new(e2)),
+    <RelExpr>,
+}
+
+pub RelExpr: Expr = {
+    <e1: AddExpr> ">" <e2: RelExpr> => Expr::Binary(Operator::Greater, Box::new(e1), Box::new(e2)),
+    <e1: AddExpr> ">=" <e2: RelExpr> => Expr::Binary(Operator::GreaterEqual, Box::new(e1), Box::new(e2)),
+    <e1: AddExpr> "<" <e2: RelExpr> => Expr::Binary(Operator::Less, Box::new(e1), Box::new(e2)),
+    <e1: AddExpr> "<=" <e2: RelExpr> => Expr::Binary(Operator::LessEqual, Box::new(e1), Box::new(e2)),
+    <AddExpr>,
+}
+
+pub AddExpr: Expr = {
+    <e1: MulExpr> "+" <e2: AddExpr> => Expr::Binary(Operator::Add, Box::new(e1), Box::new(e2)),
+    <e1: MulExpr> "-" <e2: AddExpr> => Expr::Binary(Operator::Subtract, Box::new(e1), Box::new(e2)),
+    <MulExpr>,
+}
+
+pub MulExpr: Expr = {
+    <e1: UnaryExpr> "*" <e2: MulExpr> => Expr::Binary(Operator::Multiply, Box::new(e1), Box::new(e2)),
+    <e1: UnaryExpr> "/" <e2: MulExpr> => Expr::Binary(Operator::Divide, Box::new(e1), Box::new(e2)),
+    <e1: UnaryExpr> "%" <e2: MulExpr> => Expr::Binary(Operator::Mod, Box::new(e1), Box::new(e2)),
+    <UnaryExpr>,
+}
+
+pub UnaryExpr: Expr = {
+    "--" <e1: PostfixExpr> => Expr::Unary(Operator::PreDecr, Box::new(e1)),
+    "++" <e1: PostfixExpr> => Expr::Unary(Operator::PreDecr, Box::new(e1)),
+    "&" <e1: PostfixExpr> => Expr::Unary(Operator::Ref, Box::new(e1)),
+    "*" <e1: PostfixExpr> => Expr::Unary(Operator::Deref, Box::new(e1)),
+    "-" <e1: PostfixExpr> => Expr::Unary(Operator::Negate, Box::new(e1)),
+    "+" <e1: PostfixExpr> => Expr::Unary(Operator::Positive, Box::new(e1)),
+    "!" <e1: PostfixExpr> => Expr::Unary(Operator::Not, Box::new(e1)),
+    <PostfixExpr>,
+}
+
+pub PostfixExpr: Expr = {
+    <e1: PostfixExpr> "[" <e2: Expr> "]" => Expr::Binary(Operator::ArrayAccess, Box::new(e1), Box::new(e2)),
+    <e1: PostfixExpr> "--" => Expr::Unary(Operator::PostDecr, Box::new(e1)),
+    <e1: PostfixExpr> "++" => Expr::Unary(Operator::PostIncr, Box::new(e1)),
+    <RootExpr>,
+}
+
+pub RootExpr: Expr = {
+    "(" <Expr> ")" => <>,
+    <Constant> => Expr::Number(<>),
+    <s: r#""[^"]*""#> => Expr::Str(s[1..s.len()-1].to_string()),
+    <Identifier> => Expr::Identifier(<>),
+}
+
+pub Constant: i32 = {
+    r"[0-9][0-9]*" => <>.parse().unwrap(),
+}
+
+pub Identifier: String = {
+    r"[a-zA-Z][a-zA-Z0-9_]*" => <>.to_string(),
+}
