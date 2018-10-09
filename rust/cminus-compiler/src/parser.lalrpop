@@ -80,7 +80,6 @@ pub Expr: Expr = {
 pub AssignmentExpr: Expr = {
     <i: UnaryExpr> "=" <e: LogicalOrExpr> => Expr::Assignment(Box::new(i), Box::new(e)),
     <i: UnaryExpr> "=" <f: FunctionCall> => Expr::Assignment(Box::new(i), Box::new(f)),
-    //<SubsAssignment>,
     <LogicalOrExpr>,
 }
 

@@ -6,7 +6,6 @@ pub struct Parameter {
     pub sub_arrays: Vec<i32>,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Binary(Operator, Box<Expr>, Box<Expr>),
