@@ -1,16 +1,16 @@
 grammar;
 
-use ast::{Program, Parameter, Expr, Stmt, Operator, push_to_vec};
+use ast::{Meta, Program, Parameter, Expr, Stmt, Operator, push_to_vec};
 
 pub Program: Program = <ExternalDeclaration*>;
 
-pub ExternalDeclaration: Stmt = {
-    "int" <i: Identifier> "(" <ps: ParameterList> ")" <b: Block> => Stmt::Function(i, ps, Box::new(b)),
+pub ExternalDeclaration: Meta<Stmt> = {
+    <l:@L> "int" <i: Identifier> "(" <ps: ParameterList> ")" <b: Block> => Meta::new(Stmt::Function(i, ps, Box::new(b)), l),
     <Declaration>,
 };
 
-pub Declaration: Stmt = {
-    "int" <is: DeclIdentifierList> ";" => Stmt::Declaration(is),
+pub Declaration: Meta<Stmt> = {
+    <l:@L> "int" <is: DeclIdentifierList> ";" => Meta::new(Stmt::Declaration(is), l),
 }
 
 pub Subs: Vec<i32> = {
@@ -52,25 +52,25 @@ pub Parameter: Parameter = {
     "int" <i: Identifier> <s: PSubs> => Parameter { identifier: i, sub_arrays: s },
 }
 
-pub Block: Stmt = {
-    "{" <sl: Statement*> "}" => Stmt::Block(sl),
+pub Block: Meta<Stmt> = {
+    <l:@L> "{" <sl: Statement*> "}" => Meta::new(Stmt::Block(sl), l),
 }
 
 pub FunctionCall: Expr = {
     <f: Identifier> "(" <es: ExprList> ")" => Expr::FunctionCall(f, es),
 }
 
-pub Statement: Stmt = {
+pub Statement: Meta<Stmt> = {
     <Block>,
     <Declaration>,
-    "if" "(" <e: Expr> ")" <s: Statement> => Stmt::If(e, Box::new(s)),
-    "while" "(" <e: Expr> ")" <s: Statement> => Stmt::While(e, Box::new(s)),
-    "for" "(" <e1: Expr> ";" <e2: Expr> ";" <e3: Expr> ")" <s: Statement> => Stmt::For(e1, e2, e3, Box::new(s)),
-    "return" <Expr> ";" => Stmt::Return(<>),
-    "read" "(" <Identifier> ")" ";" => Stmt::Read(<>),
-    "write" "(" <Expr> ")" ";" => Stmt::Write(<>),
-    <Expr> ";" => Stmt::Expr(<>),
-    <FunctionCall> ";" => Stmt::Expr(<>),
+    <l:@L> "if" "(" <e: Expr> ")" <s: Statement> => Meta::new(Stmt::If(e, Box::new(s)), l),
+    <l:@L> "while" "(" <e: Expr> ")" <s: Statement> => Meta::new(Stmt::While(e, Box::new(s)), l),
+    <l:@L> "for" "(" <e1: Expr> ";" <e2: Expr> ";" <e3: Expr> ")" <s: Statement> => Meta::new(Stmt::For(e1, e2, e3, Box::new(s)), l),
+    <l:@L> "return" <e: Expr> ";" => Meta::new(Stmt::Return(e), l),
+    <l:@L> "read" "(" <i: Identifier> ")" ";" => Meta::new(Stmt::Read(i), l),
+    <l:@L> "write" "(" <e: Expr> ")" ";" => Meta::new(Stmt::Write(e), l),
+    <l:@L> <e: Expr> ";" => Meta::new(Stmt::Expr(e), l),
+    <l:@L> <f: FunctionCall> ";" => Meta::new(Stmt::Expr(f), l),
 }
 
 pub Expr: Expr = {

@@ -1,4 +1,23 @@
-pub type Program = Vec<Stmt>;
+pub type Program = Vec<Meta<Stmt>>;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Meta<T> {
+    pub inside: T,
+    pub byte_offset: usize,
+}
+
+impl<T> Meta<T> {
+    pub fn new(inside: T, byte_offset: usize) -> Meta<T> {
+        Meta {
+            inside: inside,
+            byte_offset: byte_offset,
+        }
+    }
+
+    pub fn get_line(&self) -> usize {
+        self.byte_offset
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
@@ -19,15 +38,15 @@ pub enum Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    Block(Vec<Stmt>),
-    If(Expr, Box<Stmt>),
-    While(Expr, Box<Stmt>),
-    For(Expr, Expr, Expr, Box<Stmt>),
+    Block(Vec<Meta<Stmt>>),
+    If(Expr, Box<Meta<Stmt>>),
+    While(Expr, Box<Meta<Stmt>>),
+    For(Expr, Expr, Expr, Box<Meta<Stmt>>),
     Return(Expr),
     Read(String),
     Write(Expr),
     Expr(Expr),
-    Function(String, Vec<Parameter>, Box<Stmt>),
+    Function(String, Vec<Parameter>, Box<Meta<Stmt>>),
     Declaration(Vec<Parameter>),
 }
 

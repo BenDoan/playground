@@ -5,7 +5,7 @@ pub mod ast;
 
 use std::io;
 use std::io::BufRead;
-use ast::{Program, Parameter, Stmt, Expr, Operator};
+use ast::{Meta, Program, Parameter, Stmt, Expr, Operator};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -22,7 +22,6 @@ fn main() {
 
     let ast = parser::ProgramParser::new().parse(&program_string).unwrap();
     println!("Default AST format:\n{:?}\n\n", ast);
-    println!("Traversal AST format:\n{}\n\n", ast_to_str(&ast));
     println!("Processing symbol table:");
     process_symbol_table(&ast);
 }
@@ -31,27 +30,36 @@ struct SymbolEntry {
     param: Parameter,
 }
 
-type SymbolTables = Rc<RefCell<Vec<Rc<RefCell<HashMap<String, SymbolEntry>>>>>>;
+type SymbolTables = Vec<HashMap<String, SymbolEntry>>;
 
 fn process_symbol_table(program: &Program) {
-    fn traverse_stmt(stmt: &Stmt, symbol_tables: SymbolTables) {
-        match stmt {
+    fn traverse_stmt(stmt: Meta<Stmt>, symbol_tables: &mut SymbolTables) {
+        match stmt.inside {
             Stmt::Block(stmts) => {
-                let table_for_scope = Rc::new(RefCell::new(HashMap::new()));
-                symbol_tables.borrow_mut().push(table_for_scope.clone());
+                symbol_tables.push(HashMap::new());
                 for stmt in stmts {
-                    traverse_stmt(stmt, symbol_tables.clone());
+                    traverse_stmt(stmt, symbol_tables);
                 }
-                for (var_name, _) in table_for_scope.borrow_mut().iter() {
-                    println!("Variable {} out of scope", var_name);
+
+                if let Some(table_for_scope) = symbol_tables.pop() {
+                    for (var_name, _) in table_for_scope.iter() {
+                        println!(
+                            "Variable {} out of scope for line {}",
+                            var_name,
+                            stmt.byte_offset
+                        );
+                    }
                 }
-                symbol_tables.borrow_mut().pop();
             }
-            Stmt::Declaration(parameters) => {
+            Stmt::Declaration(ref parameters) => {
                 for parameter in parameters {
-                    println!("New variable {:?} in scope", parameter.identifier);
-                    if let Some(table_for_scope) = symbol_tables.borrow_mut().last() {
-                        table_for_scope.borrow_mut().insert(
+                    println!(
+                        "New variable {:?} in scope for line {}",
+                        parameter.identifier,
+                        stmt.get_line()
+                    );
+                    if let Some(table_for_scope) = symbol_tables.last_mut() {
+                        table_for_scope.insert(
                             parameter.identifier.clone(),
                             SymbolEntry { param: parameter.clone() },
                         );
@@ -60,116 +68,30 @@ fn process_symbol_table(program: &Program) {
             }
             Stmt::Function(_, parameters, statement) => {
                 for parameter in parameters {
-                    println!("New param {:?} in scope", parameter.identifier);
-                    if let Some(table_for_scope) = symbol_tables.borrow_mut().last() {
-                        table_for_scope.borrow_mut().insert(
+                    println!(
+                        "New param {:?} in scope at line {}",
+                        parameter.identifier,
+                        stmt.byte_offset
+                    );
+                    if let Some(table_for_scope) = symbol_tables.last_mut() {
+                        table_for_scope.insert(
                             parameter.identifier.clone(),
                             SymbolEntry { param: parameter.clone() },
                         );
                     }
                 }
-                traverse_stmt(statement, symbol_tables);
+                traverse_stmt(*statement, symbol_tables);
             }
-            Stmt::While(_, statement) => traverse_stmt(statement, symbol_tables),
-            Stmt::For(_, _, _, statement) => traverse_stmt(statement, symbol_tables),
+            Stmt::While(_, statement) => traverse_stmt(*statement, symbol_tables),
+            Stmt::For(_, _, _, statement) => traverse_stmt(*statement, symbol_tables),
             _ => (),
         }
     }
 
-    let symbol_tables: SymbolTables = Rc::new(RefCell::new(vec![]));
+    let mut symbol_tables: SymbolTables = vec![];
     for statement in program {
-        traverse_stmt(statement, symbol_tables.clone());
+        traverse_stmt(statement.clone(), &mut symbol_tables);
     }
-}
-
-fn ast_to_str(program: &Program) -> String {
-    fn traverse_stmt(stmt: &Stmt, level: usize) -> String {
-        let i = get_indent(level);
-        match stmt {
-            Stmt::Block(ss) => {
-                ss.iter()
-                    .map(|s| traverse_stmt(s, level + 1))
-                    .collect::<Vec<_>>()
-                    .join("")
-            }
-            Stmt::If(e, s) => {
-                format!(
-                    "{}IF {}:\n{}\n",
-                    i,
-                    traverse_expr(e),
-                    traverse_stmt(s, level + 1)
-                )
-            }
-            Stmt::While(e, s) => {
-                format!(
-                    "{}WHILE {}:\n{}\n",
-                    i,
-                    traverse_expr(e),
-                    traverse_stmt(s, level + 1)
-                )
-            }
-            Stmt::For(e1, e2, e3, s) => {
-                format!(
-                    "{}FOR {}, {}, {}:\n{}\n",
-                    i,
-                    traverse_expr(e1),
-                    traverse_expr(e2),
-                    traverse_expr(e3),
-                    traverse_stmt(s, level + 1)
-                )
-            }
-            Stmt::Return(e) => format!("{}RETURN {}\n", i, traverse_expr(e)),
-            Stmt::Read(s) => format!("{}READ {}\n", i, s),
-            Stmt::Write(e) => format!("{}WRITE {}\n", i, traverse_expr(e)),
-            Stmt::Expr(e) => format!("{}{}\n", i, traverse_expr(e)),
-            Stmt::Function(f, ps, s) => {
-                format!(
-                    "{}FN {} ({}):\n{}\n",
-                    i,
-                    f,
-                    get_params(ps),
-                    traverse_stmt(s, level + 1)
-                )
-            }
-            Stmt::Declaration(ps) => format!("{}DECL {}\n", i, get_params(ps)),
-        }
-    }
-
-    fn traverse_expr(expr: &Expr) -> String {
-        match expr {
-            Expr::Binary(o, e1, e2) => {
-                format!("{} {:?} {}", traverse_expr(e1), o, traverse_expr(e2))
-            }
-            Expr::Unary(o, e) => format!("{:?} {}", o, traverse_expr(e)),
-            Expr::Number(n) => n.to_string(),
-            Expr::Str(s) => s.to_string(),
-            Expr::Identifier(s) => s.to_string(),
-            Expr::Assignment(e1, e2) => {
-                format!("int {} = {}", traverse_expr(e1), traverse_expr(e2))
-            }
-            Expr::FunctionCall(s, es) => {
-                format!(
-                    "{}({})",
-                    s,
-                    es.iter().map(traverse_expr).collect::<Vec<_>>().join(", ")
-                )
-            }
-        }
-    }
-    fn get_params(parameters: &Vec<Parameter>) -> String {
-        parameters
-            .iter()
-            .map(|p| format!("int {}", p.identifier))
-            .collect::<Vec<_>>()
-            .join(", ")
-    }
-
-
-    program.iter().map(|s| traverse_stmt(s, 0)).collect()
-}
-
-fn get_indent(level: usize) -> String {
-    "  ".repeat(level).to_string()
 }
 
 #[cfg(test)]
