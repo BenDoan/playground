@@ -1,0 +1,9 @@
+grammar;
+
+pub Program: (String, String, Option<String>) = {
+    "[" <group: String> "]" <name: String> ":" <path: String?> => (group, name, path)
+}
+
+String: String = {
+    r"\w*" => <>.to_string()
+}
