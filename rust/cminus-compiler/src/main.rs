@@ -1,14 +1,17 @@
 #[macro_use]
 extern crate lalrpop_util;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 pub mod ast;
+pub mod compiler;
 
 use std::io;
 use std::io::BufRead;
+use lalrpop_util::ParseError;
 use ast::{Meta, Program, Parameter, Stmt, Expr, Operator};
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 lalrpop_mod!(pub parser);
 
@@ -18,80 +21,86 @@ fn main() {
         .lock()
         .lines()
         .filter_map(|l| l.ok())
-        .collect::<String>();
+        .collect::<Vec<_>>()
+        .join("\n");
 
-    let ast = parser::ProgramParser::new().parse(&program_string).unwrap();
+    if let Some(program) = parse_program(&program_string) {
+        // let program = add_line_nums(&program, &program_string).clone();
+        handle_ast(&program);
+    }
+}
+
+fn handle_ast(ast: &Program) {
     println!("Default AST format:\n{:?}\n\n", ast);
+    println!(
+        "Default AST format:\n{}\n\n",
+        serde_json::to_string_pretty(ast).unwrap()
+    );
     println!("Processing symbol table:");
-    process_symbol_table(&ast);
+    compiler::process_symbol_table(ast);
 }
 
-struct SymbolEntry {
-    param: Parameter,
-}
 
-type SymbolTables = Vec<HashMap<String, SymbolEntry>>;
-
-fn process_symbol_table(program: &Program) {
-    fn traverse_stmt(stmt: Meta<Stmt>, symbol_tables: &mut SymbolTables) {
-        match stmt.inside {
-            Stmt::Block(stmts) => {
-                symbol_tables.push(HashMap::new());
-                for stmt in stmts {
-                    traverse_stmt(stmt, symbol_tables);
-                }
-
-                if let Some(table_for_scope) = symbol_tables.pop() {
-                    for (var_name, _) in table_for_scope.iter() {
-                        println!(
-                            "Variable {} out of scope for line {}",
-                            var_name,
-                            stmt.byte_offset
-                        );
+fn parse_program(program_string: &String) -> Option<Program> {
+    let maybe_ast = parser::ProgramParser::new().parse(program_string);
+    match maybe_ast {
+        Ok(ast) => Some(ast),
+        Err(e) => {
+            match e {
+                ParseError::UnrecognizedToken { token, .. } => {
+                    if let Some((byte, ..)) = token {
+                        let (line, col) = get_pos(program_string, byte);
+                        println!("Error at line: {}, col: {}", line, col);
                     }
                 }
+                misc @ _ => println!("{:?}", misc),
             }
-            Stmt::Declaration(ref parameters) => {
-                for parameter in parameters {
-                    println!(
-                        "New variable {:?} in scope for line {}",
-                        parameter.identifier,
-                        stmt.get_line()
-                    );
-                    if let Some(table_for_scope) = symbol_tables.last_mut() {
-                        table_for_scope.insert(
-                            parameter.identifier.clone(),
-                            SymbolEntry { param: parameter.clone() },
-                        );
-                    }
-                }
-            }
-            Stmt::Function(_, parameters, statement) => {
-                for parameter in parameters {
-                    println!(
-                        "New param {:?} in scope at line {}",
-                        parameter.identifier,
-                        stmt.byte_offset
-                    );
-                    if let Some(table_for_scope) = symbol_tables.last_mut() {
-                        table_for_scope.insert(
-                            parameter.identifier.clone(),
-                            SymbolEntry { param: parameter.clone() },
-                        );
-                    }
-                }
-                traverse_stmt(*statement, symbol_tables);
-            }
-            Stmt::While(_, statement) => traverse_stmt(*statement, symbol_tables),
-            Stmt::For(_, _, _, statement) => traverse_stmt(*statement, symbol_tables),
-            _ => (),
+            None
         }
     }
+}
 
-    let mut symbol_tables: SymbolTables = vec![];
-    for statement in program {
-        traverse_stmt(statement.clone(), &mut symbol_tables);
+// fn add_line_nums<'a>(program: &'a Program, program_str: &String) -> &'a Program {
+//     fn traverse_stmt(stmt: &mut Meta<Stmt>, program_str: &String) {
+//         // let mut stmt = stmt;
+//         stmt.line_num = Some(get_line(program_str, stmt.byte_offset));
+//         // println!("line: {:?}", stmt.line_num);
+
+//         match stmt.inside {
+//             Stmt::Block(ref statements) => {
+//                 for mut statement in statements {
+//                     traverse_stmt(&mut statement, program_str);
+//                 }
+//             }
+//             Stmt::Declaration(..) => (),
+//             Stmt::Function(.., ref mut statement) => traverse_stmt(statement, program_str),
+//             Stmt::While(_, ref mut statement) => traverse_stmt(statement, program_str),
+//             Stmt::For(.., ref mut statement) => traverse_stmt(statement, program_str),
+//             _ => (),
+//         }
+//     }
+
+//     for mut statement in program {
+//         traverse_stmt(&mut statement, program_str);
+//     }
+
+//     program
+// }
+
+fn get_pos(program: &String, byte: usize) -> (u32, u32) {
+    let mut line_count = 1;
+    let mut col_count = 1;
+    for (i, c) in program.chars().enumerate() {
+        if c == '\n' {
+            line_count += 1;
+            col_count = 1
+        }
+        if i == byte {
+            break;
+        }
+        col_count += 1
     }
+    (line_count, col_count)
 }
 
 #[cfg(test)]
@@ -311,5 +320,4 @@ mod tests {
             )
         );
     }
-
 }

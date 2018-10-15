@@ -1,9 +1,10 @@
 pub type Program = Vec<Meta<Stmt>>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Meta<T> {
     pub inside: T,
     pub byte_offset: usize,
+    pub line_num: Option<u32>,
 }
 
 impl<T> Meta<T> {
@@ -11,6 +12,7 @@ impl<T> Meta<T> {
         Meta {
             inside: inside,
             byte_offset: byte_offset,
+            line_num: None,
         }
     }
 
@@ -19,13 +21,13 @@ impl<T> Meta<T> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Parameter {
     pub identifier: String,
     pub sub_arrays: Vec<i32>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Expr {
     Binary(Operator, Box<Expr>, Box<Expr>),
     Unary(Operator, Box<Expr>),
@@ -36,7 +38,7 @@ pub enum Expr {
     FunctionCall(String, Vec<Expr>),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Stmt {
     Block(Vec<Meta<Stmt>>),
     If(Expr, Box<Meta<Stmt>>),
@@ -50,7 +52,7 @@ pub enum Stmt {
     Declaration(Vec<Parameter>),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum Operator {
     Ref,
     Deref,
