@@ -53,6 +53,10 @@ fn parse_program(program_string: &String) -> Option<Program> {
                         println!("Error at line: {}, col: {}", line, col);
                     }
                 }
+                ParseError::InvalidToken { location } => {
+                    let (line, col) = get_pos(program_string, location);
+                    println!("Invalid token at line {}, col: {}", line, col);
+                }
                 misc @ _ => println!("{:?}", misc),
             }
             None
