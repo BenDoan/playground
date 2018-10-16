@@ -29,25 +29,25 @@ pub struct Parameter {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Expr {
-    Binary(Operator, Box<Expr>, Box<Expr>),
-    Unary(Operator, Box<Expr>),
+    Binary(Operator, Box<Meta<Expr>>, Box<Meta<Expr>>),
+    Unary(Operator, Box<Meta<Expr>>),
     Number(i32),
     Str(String),
     Identifier(String),
-    Assignment(Box<Expr>, Box<Expr>),
-    FunctionCall(String, Vec<Expr>),
+    Assignment(Box<Meta<Expr>>, Box<Meta<Expr>>),
+    FunctionCall(String, Vec<Meta<Expr>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Stmt {
     Block(Vec<Meta<Stmt>>),
-    If(Expr, Box<Meta<Stmt>>),
-    While(Expr, Box<Meta<Stmt>>),
-    For(Expr, Expr, Expr, Box<Meta<Stmt>>),
-    Return(Expr),
+    If(Meta<Expr>, Box<Meta<Stmt>>),
+    While(Meta<Expr>, Box<Meta<Stmt>>),
+    For(Meta<Expr>, Meta<Expr>, Meta<Expr>, Box<Meta<Stmt>>),
+    Return(Meta<Expr>),
     Read(String),
-    Write(Expr),
-    Expr(Expr),
+    Write(Meta<Expr>),
+    Expr(Meta<Expr>),
     Function(String, Vec<Parameter>, Box<Meta<Stmt>>),
     Declaration(Vec<Parameter>),
 }

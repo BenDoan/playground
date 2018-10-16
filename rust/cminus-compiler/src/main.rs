@@ -7,11 +7,13 @@ extern crate serde_json;
 
 pub mod ast;
 pub mod compiler;
+pub mod util;
 
 use std::io;
 use std::io::BufRead;
 use lalrpop_util::ParseError;
 use ast::{Meta, Program, Parameter, Stmt, Expr, Operator};
+use util::get_pos;
 
 lalrpop_mod!(pub parser);
 
@@ -26,18 +28,13 @@ fn main() {
 
     if let Some(program) = parse_program(&program_string) {
         // let program = add_line_nums(&program, &program_string).clone();
-        handle_ast(&program);
+        handle_ast(&program, &program_string);
     }
 }
 
-fn handle_ast(ast: &Program) {
-    println!("Default AST format:\n{:?}\n\n", ast);
-    println!(
-        "Default AST format:\n{}\n\n",
-        serde_json::to_string_pretty(ast).unwrap()
-    );
-    println!("Processing symbol table:");
-    compiler::process_symbol_table(ast);
+fn handle_ast(ast: &Program, source_code: &String) {
+    println!("Processing exprs:");
+    compiler::compile(ast, source_code);
 }
 
 
@@ -90,22 +87,6 @@ fn parse_program(program_string: &String) -> Option<Program> {
 
 //     program
 // }
-
-fn get_pos(program: &String, byte: usize) -> (u32, u32) {
-    let mut line_count = 1;
-    let mut col_count = 1;
-    for (i, c) in program.chars().enumerate() {
-        if c == '\n' {
-            line_count += 1;
-            col_count = 1
-        }
-        if i == byte {
-            break;
-        }
-        col_count += 1
-    }
-    (line_count, col_count)
-}
 
 #[cfg(test)]
 mod tests {

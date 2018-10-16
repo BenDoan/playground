@@ -41,7 +41,7 @@ pub ParameterList: Vec<Parameter> = {
     <p: Parameter> => vec![p],
 }
 
-pub ExprList: Vec<Expr> = {
+pub ExprList: Vec<Meta<Expr>> = {
     () => vec![],
     <e: Expr> => vec![e],
     <es: ExprList> "," <e: Expr> => push_to_vec(es, e),
@@ -57,8 +57,8 @@ pub Block: Meta<Stmt> = {
     <l:@L> "{" <sl: Statement*> "}" => Meta::new(Stmt::Block(sl), l),
 }
 
-pub FunctionCall: Expr = {
-    <f: Identifier> "(" <es: ExprList> ")" => Expr::FunctionCall(f, es),
+pub FunctionCall: Meta<Expr> = {
+    <l:@L> <f: Identifier> "(" <es: ExprList> ")" => Meta::new(Expr::FunctionCall(f, es), l),
 }
 
 pub Statement: Meta<Stmt> = {
@@ -74,91 +74,91 @@ pub Statement: Meta<Stmt> = {
     <l:@L> <f: FunctionCall> ";" => Meta::new(Stmt::Expr(f), l),
 }
 
-pub Expr: Expr = {
+pub Expr: Meta<Expr> = {
     <AssignmentExpr>,
 }
 
-pub AssignmentExpr: Expr = {
-    <i: UnaryExpr> "=" <e: LogicalOrExpr> => Expr::Assignment(Box::new(i), Box::new(e)),
-    <i: UnaryExpr> "=" <f: FunctionCall> => Expr::Assignment(Box::new(i), Box::new(f)),
+pub AssignmentExpr: Meta<Expr> = {
+    <l:@L> <i: UnaryExpr> "=" <e: LogicalOrExpr> => Meta::new(Expr::Assignment(Box::new(i), Box::new(e)), l),
+    <l:@L> <i: UnaryExpr> "=" <f: FunctionCall> => Meta::new(Expr::Assignment(Box::new(i), Box::new(f)), l),
     <LogicalOrExpr>,
 }
 
-pub LogicalOrExpr: Expr = {
-    <e1: LogicalAndExpr> "||" <e2: LogicalOrExpr> => Expr::Binary(Operator::LogicalOr, Box::new(e1), Box::new(e2)),
+pub LogicalOrExpr: Meta<Expr> = {
+    <l:@L> <e1: LogicalAndExpr> "||" <e2: LogicalOrExpr> => Meta::new(Expr::Binary(Operator::LogicalOr, Box::new(e1), Box::new(e2)), l),
     <LogicalAndExpr>,
 }
 
-pub LogicalAndExpr: Expr = {
-    <e1: OrExpr> "&&" <e2: LogicalAndExpr> => Expr::Binary(Operator::LogicalAnd, Box::new(e1), Box::new(e2)),
+pub LogicalAndExpr: Meta<Expr> = {
+    <l:@L> <e1: OrExpr> "&&" <e2: LogicalAndExpr> => Meta::new(Expr::Binary(Operator::LogicalAnd, Box::new(e1), Box::new(e2)), l),
     <OrExpr>,
 }
 
-pub OrExpr: Expr = {
-    <e1: XorExpr> "|" <e2: OrExpr> => Expr::Binary(Operator::Or, Box::new(e1), Box::new(e2)),
+pub OrExpr: Meta<Expr> = {
+    <l:@L> <e1: XorExpr> "|" <e2: OrExpr> => Meta::new(Expr::Binary(Operator::Or, Box::new(e1), Box::new(e2)), l),
     <XorExpr>,
 }
 
-pub XorExpr: Expr = {
-    <e1: AndExpr> "^" <e2: XorExpr> => Expr::Binary(Operator::Xor, Box::new(e1), Box::new(e2)),
+pub XorExpr: Meta<Expr> = {
+    <l:@L> <e1: AndExpr> "^" <e2: XorExpr> => Meta::new(Expr::Binary(Operator::Xor, Box::new(e1), Box::new(e2)), l),
     <AndExpr>,
 }
 
-pub AndExpr: Expr = {
-    <e1: EqExpr> "&" <e2: AndExpr> => Expr::Binary(Operator::And, Box::new(e1), Box::new(e2)),
+pub AndExpr: Meta<Expr> = {
+    <l:@L> <e1: EqExpr> "&" <e2: AndExpr> => Meta::new(Expr::Binary(Operator::And, Box::new(e1), Box::new(e2)), l),
     <EqExpr>,
 }
 
-pub EqExpr: Expr = {
-    <e1: RelExpr> "==" <e2: EqExpr> => Expr::Binary(Operator::Equal, Box::new(e1), Box::new(e2)),
-    <e1: RelExpr> "!=" <e2: EqExpr> => Expr::Binary(Operator::NotEqual, Box::new(e1), Box::new(e2)),
+pub EqExpr: Meta<Expr> = {
+    <l:@L> <e1: RelExpr> "==" <e2: EqExpr> => Meta::new(Expr::Binary(Operator::Equal, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: RelExpr> "!=" <e2: EqExpr> => Meta::new(Expr::Binary(Operator::NotEqual, Box::new(e1), Box::new(e2)), l),
     <RelExpr>,
 }
 
-pub RelExpr: Expr = {
-    <e1: AddExpr> ">" <e2: RelExpr> => Expr::Binary(Operator::Greater, Box::new(e1), Box::new(e2)),
-    <e1: AddExpr> ">=" <e2: RelExpr> => Expr::Binary(Operator::GreaterEqual, Box::new(e1), Box::new(e2)),
-    <e1: AddExpr> "<" <e2: RelExpr> => Expr::Binary(Operator::Less, Box::new(e1), Box::new(e2)),
-    <e1: AddExpr> "<=" <e2: RelExpr> => Expr::Binary(Operator::LessEqual, Box::new(e1), Box::new(e2)),
+pub RelExpr: Meta<Expr> = {
+    <l:@L> <e1: AddExpr> ">" <e2: RelExpr> => Meta::new(Expr::Binary(Operator::Greater, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: AddExpr> ">=" <e2: RelExpr> => Meta::new(Expr::Binary(Operator::GreaterEqual, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: AddExpr> "<" <e2: RelExpr> => Meta::new(Expr::Binary(Operator::Less, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: AddExpr> "<=" <e2: RelExpr> => Meta::new(Expr::Binary(Operator::LessEqual, Box::new(e1), Box::new(e2)), l),
     <AddExpr>,
 }
 
-pub AddExpr: Expr = {
-    <e1: MulExpr> "+" <e2: AddExpr> => Expr::Binary(Operator::Add, Box::new(e1), Box::new(e2)),
-    <e1: MulExpr> "-" <e2: AddExpr> => Expr::Binary(Operator::Subtract, Box::new(e1), Box::new(e2)),
+pub AddExpr: Meta<Expr> = {
+    <l:@L> <e1: MulExpr> "+" <e2: AddExpr> => Meta::new(Expr::Binary(Operator::Add, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: MulExpr> "-" <e2: AddExpr> => Meta::new(Expr::Binary(Operator::Subtract, Box::new(e1), Box::new(e2)), l),
     <MulExpr>,
 }
 
-pub MulExpr: Expr = {
-    <e1: UnaryExpr> "*" <e2: MulExpr> => Expr::Binary(Operator::Multiply, Box::new(e1), Box::new(e2)),
-    <e1: UnaryExpr> "/" <e2: MulExpr> => Expr::Binary(Operator::Divide, Box::new(e1), Box::new(e2)),
-    <e1: UnaryExpr> "%" <e2: MulExpr> => Expr::Binary(Operator::Mod, Box::new(e1), Box::new(e2)),
+pub MulExpr: Meta<Expr> = {
+    <l:@L> <e1: UnaryExpr> "*" <e2: MulExpr> => Meta::new(Expr::Binary(Operator::Multiply, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: UnaryExpr> "/" <e2: MulExpr> => Meta::new(Expr::Binary(Operator::Divide, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: UnaryExpr> "%" <e2: MulExpr> => Meta::new(Expr::Binary(Operator::Mod, Box::new(e1), Box::new(e2)), l),
     <UnaryExpr>,
 }
 
-pub UnaryExpr: Expr = {
-    "--" <e1: PostfixExpr> => Expr::Unary(Operator::PreDecr, Box::new(e1)),
-    "++" <e1: PostfixExpr> => Expr::Unary(Operator::PreDecr, Box::new(e1)),
-    "&" <e1: PostfixExpr> => Expr::Unary(Operator::Ref, Box::new(e1)),
-    "*" <e1: PostfixExpr> => Expr::Unary(Operator::Deref, Box::new(e1)),
-    "-" <e1: PostfixExpr> => Expr::Unary(Operator::Negate, Box::new(e1)),
-    "+" <e1: PostfixExpr> => Expr::Unary(Operator::Positive, Box::new(e1)),
-    "!" <e1: PostfixExpr> => Expr::Unary(Operator::Not, Box::new(e1)),
+pub UnaryExpr: Meta<Expr> = {
+    <l:@L> "--" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::PreDecr, Box::new(e1)), l),
+    <l:@L> "++" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::PreDecr, Box::new(e1)), l),
+    <l:@L> "&" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Ref, Box::new(e1)), l),
+    <l:@L> "*" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Deref, Box::new(e1)), l),
+    <l:@L> "-" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Negate, Box::new(e1)), l),
+    <l:@L> "+" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Positive, Box::new(e1)), l),
+    <l:@L> "!" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Not, Box::new(e1)), l),
     <PostfixExpr>,
 }
 
-pub PostfixExpr: Expr = {
-    <e1: PostfixExpr> "[" <e2: Expr> "]" => Expr::Binary(Operator::ArrayAccess, Box::new(e1), Box::new(e2)),
-    <e1: PostfixExpr> "--" => Expr::Unary(Operator::PostDecr, Box::new(e1)),
-    <e1: PostfixExpr> "++" => Expr::Unary(Operator::PostIncr, Box::new(e1)),
+pub PostfixExpr: Meta<Expr> = {
+    <l:@L> <e1: PostfixExpr> "[" <e2: Expr> "]" => Meta::new(Expr::Binary(Operator::ArrayAccess, Box::new(e1), Box::new(e2)), l),
+    <l:@L> <e1: PostfixExpr> "--" => Meta::new(Expr::Unary(Operator::PostDecr, Box::new(e1)), l),
+    <l:@L> <e1: PostfixExpr> "++" => Meta::new(Expr::Unary(Operator::PostIncr, Box::new(e1)), l),
     <RootExpr>,
 }
 
-pub RootExpr: Expr = {
+pub RootExpr: Meta<Expr> = {
+    <l:@L> <c: Constant> => Meta::new(Expr::Number(c), l),
+    <l:@L> <s: r#""[^"]*""#> => Meta::new(Expr::Str(s[1..s.len()-1].to_string()), l),
+    <l:@L> <i: Identifier> => Meta::new(Expr::Identifier(i), l),
     "(" <Expr> ")" => <>,
-    <Constant> => Expr::Number(<>),
-    <s: r#""[^"]*""#> => Expr::Str(s[1..s.len()-1].to_string()),
-    <Identifier> => Expr::Identifier(<>),
 }
 
 pub Constant: i32 = {
