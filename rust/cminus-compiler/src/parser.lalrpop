@@ -138,7 +138,7 @@ pub MulExpr: Meta<Expr> = {
 
 pub UnaryExpr: Meta<Expr> = {
     <l:@L> "--" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::PreDecr, Box::new(e1)), l),
-    <l:@L> "++" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::PreDecr, Box::new(e1)), l),
+    <l:@L> "++" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::PreIncr, Box::new(e1)), l),
     <l:@L> "&" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Ref, Box::new(e1)), l),
     <l:@L> "*" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Deref, Box::new(e1)), l),
     <l:@L> "-" <e1: PostfixExpr> => Meta::new(Expr::Unary(Operator::Negate, Box::new(e1)), l),

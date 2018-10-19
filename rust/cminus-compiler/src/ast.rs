@@ -4,7 +4,6 @@ pub type Program = Vec<Meta<Stmt>>;
 pub struct Meta<T> {
     pub inside: T,
     pub byte_offset: usize,
-    pub line_num: Option<u32>,
 }
 
 impl<T> Meta<T> {
@@ -12,12 +11,7 @@ impl<T> Meta<T> {
         Meta {
             inside: inside,
             byte_offset: byte_offset,
-            line_num: None,
         }
-    }
-
-    pub fn get_line(&self) -> usize {
-        self.byte_offset
     }
 }
 
