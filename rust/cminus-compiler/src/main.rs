@@ -33,16 +33,8 @@ fn main() {
 }
 
 fn handle_ast(ast: &Program, source_code: &String) {
-    let quads = compiler::compile(ast, source_code);
-    // println!("Quads:");
-    // for quad in quads.iter() {
-    //     if let compiler::Quad::Comment(..) = quad {
-    //         println!("");
-    //     }
-    //     println!("{:?}", quad);
-    // }
-
-    println!("{}", compiler::quads_to_arm(&quads).join("\n"));
+    let stmts = compiler::compile(ast, source_code);
+    println!("{}", stmts.join("\n"));
 }
 
 
