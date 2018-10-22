@@ -33,7 +33,6 @@ fn main() {
 }
 
 fn handle_ast(ast: &Program, source_code: &String) {
-    println!("AST: {}", serde_json::to_string_pretty(ast).unwrap());
     let stmts = compiler::compile(ast, source_code);
     println!("{}", stmts.join("\n"));
 }
