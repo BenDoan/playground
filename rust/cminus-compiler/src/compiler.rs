@@ -269,7 +269,7 @@ pub fn compile_expr(
                     } else {
                         stmts.push(format!("sub r2, r2, #1"));
                     }
-                    stmts.push(format!("ldr r2, ={}", OFFSET + mem_loc));
+                    stmts.push(format!("str r2, ={}", OFFSET + mem_loc));
 
                     return_mem = mem_loc;
                 }
