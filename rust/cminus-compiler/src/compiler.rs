@@ -170,7 +170,7 @@ pub fn compile_expr(
                     stmts.push(format!("beq {}", label2));
 
                     stmts.push(format!("{}:", label1));
-                    stmts.push(format!("mv r3, #1"));
+                    stmts.push(format!("mov r3, #1"));
                     stmts.push(format!("b {}", label3));
 
                     stmts.push(format!("{}:", label2));
@@ -198,6 +198,36 @@ pub fn compile_expr(
                     };
                     stmts.push(format!("{} r1, #1", instruction));
                     stmts.push(format!("str r1, ={}", OFFSET + curr_mem_loc));
+                }
+                Operator::Divide | Operator::Mod => {
+                    let label_start = format!(".start{}", curr_mem_loc);
+                    let label_end = format!(".end{}", curr_mem_loc);
+
+                    let e1_loc = compile_expr(&*e1, symbol_tables, stmts, count);
+                    let e2_loc = compile_expr(&*e2, symbol_tables, stmts, count);
+                    stmts.push(format!("ldr r1, ={}", OFFSET + e1_loc));
+                    stmts.push(format!("ldr r2, ={}", OFFSET + e2_loc));
+                    stmts.push(format!("mov r3, #0"));
+
+                    stmts.push(format!("cmp r1, r2"));
+                    stmts.push(format!("blt {}", label_end));
+
+                    stmts.push(format!("{}:", label_start));
+                    stmts.push(format!("sub r1, r1, r2"));
+                    stmts.push(format!("add r3, r3, #1"));
+
+                    stmts.push(format!("cmp r1, r2"));
+                    stmts.push(format!("bge {}", label_start));
+                    stmts.push(format!("{}:", label_end));
+                    // r3 = quotient
+                    // r1 = remainder
+
+                    if let Operator::Divide = op {
+                        stmts.push(format!("str r3, ={}", OFFSET + curr_mem_loc));
+                    } else {
+                        stmts.push(format!("str r1, ={}", OFFSET + curr_mem_loc));
+                    }
+
                 }
                 _ => {
                     let e1_val = compile_expr(&*e1, symbol_tables, stmts, count);

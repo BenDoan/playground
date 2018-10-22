@@ -164,8 +164,8 @@ pub RootExpr: Meta<Expr> = {
 pub Constant: i32 = {
     "0" => 0,
     r"[1-9][0-9]*" => <>.parse().unwrap(),
-    <s: r"0[0-9]+"> => i32::from_str_radix(&s[1..s.len()-1], 8).unwrap(),
-    <s: r"0x[1-9][0-9]*"> => i32::from_str_radix(&s[2..s.len()-1], 16).unwrap(),
+    <s: r"0[0-9]+"> => i32::from_str_radix(&s[1..s.len()], 8).unwrap(),
+    <s: r"0x[1-9][0-9]*"> => i32::from_str_radix(&s[2..s.len()], 16).unwrap(),
 }
 
 pub Identifier: String = {
