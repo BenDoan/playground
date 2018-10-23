@@ -8,16 +8,14 @@ type SymbolTables = Vec<HashMap<String, SymbolEntry>>;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SymbolEntry {
-    id: usize,
     name: String,
     mem_loc: usize,
 }
 
 impl SymbolEntry {
-    pub fn new(id: usize, name: String, mem_loc: &mut usize) -> SymbolEntry {
+    pub fn new(name: String, mem_loc: &mut usize) -> SymbolEntry {
         *mem_loc += 4;
         SymbolEntry {
-            id: id,
             name: name,
             mem_loc: *mem_loc,
         }
@@ -48,15 +46,16 @@ impl Compiler {
 
         self.stmts.push(format!("swi 0x11"));
 
-        // println!("; Symbol table:");
-        // for symbol_table in self.symbol_tables {
-        //     for (k, symbol) in &symbol_table {
-        //         println!("; {}={:?}", k, symbol);
-        //     }
-        // }
+        let mut symbol_table_comments = vec![];
+        symbol_table_comments.push("; Symbol table:".to_string());
+        for symbol_table in self.symbol_tables.iter() {
+            for (k, symbol) in symbol_table.iter() {
+                symbol_table_comments.push(format!("; {}={:?}", k, symbol));
+            }
+        }
 
 
-        self.stmts.clone()
+        [symbol_table_comments.as_slice(), self.stmts.as_slice()].concat()
     }
 
     fn compile_stmt(&mut self, stmt: &Meta<Stmt>) {
@@ -79,7 +78,6 @@ impl Compiler {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
                             SymbolEntry::new(
-                                stmt.byte_offset,
                                 parameter.identifier.clone(),
                                 &mut self.count,
                             ),
@@ -93,7 +91,6 @@ impl Compiler {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
                             SymbolEntry::new(
-                                stmt.byte_offset,
                                 parameter.identifier.clone(),
                                 &mut self.count,
                             ),
@@ -351,6 +348,7 @@ impl Compiler {
                 let rhs_val = self.compile_expr(&*rhs);
                 if let Expr::Identifier(ref name) = lhs.inside {
                     if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
+                        val = format!("Assign({})", var.name);
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + rhs_val));
                         self.stmts.push(
                             format!("str r3, ={}", OFFSET + var.mem_loc),
@@ -371,6 +369,7 @@ impl Compiler {
             }
             Expr::Identifier(ref name) => {
                 if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
+                    val = var.name.clone();
                     return_mem = var.mem_loc;
                 } else {
                     let pos = get_pos(&self.source_code, expr.byte_offset);
@@ -395,7 +394,7 @@ impl Compiler {
             _ => (),
         };
 
-        let curr_symbol = SymbolEntry::new(expr.byte_offset, val, &mut self.count);
+        let curr_symbol = SymbolEntry::new(val, &mut self.count);
         if let Some(symbol_table) = self.symbol_tables.first_mut() {
             symbol_table.insert(expr.byte_offset.to_string(), curr_symbol.clone());
         }
