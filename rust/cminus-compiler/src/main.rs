@@ -33,7 +33,7 @@ fn main() {
 }
 
 fn handle_ast(ast: &Program, source_code: &String) {
-    let stmts = compiler::compile(ast, source_code);
+    let stmts = compiler::Compiler::new(source_code.clone()).compile(ast);
     println!("{}", stmts.join("\n"));
 }
 
