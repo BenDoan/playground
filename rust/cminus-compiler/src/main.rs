@@ -12,7 +12,7 @@ pub mod util;
 use std::io;
 use std::io::BufRead;
 use lalrpop_util::ParseError;
-use ast::{Meta, Program, Parameter, Stmt, Expr, Operator};
+use ast::Program;
 use util::get_pos;
 
 lalrpop_mod!(pub parser);
