@@ -13,11 +13,10 @@ pub struct SymbolEntry {
 }
 
 impl SymbolEntry {
-    pub fn new(name: String, mem_loc: &mut usize) -> SymbolEntry {
-        *mem_loc += 4;
+    pub fn new(name: String, mem_loc: usize) -> SymbolEntry {
         SymbolEntry {
             name: name,
-            mem_loc: *mem_loc,
+            mem_loc: mem_loc,
         }
     }
 }
@@ -63,6 +62,7 @@ impl Compiler {
             "\n; line {}",
             get_pos(&self.source_code, stmt.byte_offset).0
         ));
+        self.count += 4;
 
         match stmt.inside {
             Stmt::Block(ref statements) => {
@@ -77,12 +77,10 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(
-                                parameter.identifier.clone(),
-                                &mut self.count,
-                            ),
+                            SymbolEntry::new(parameter.identifier.clone(), self.count),
                         );
                     }
+                    self.count += 4;
                 }
             }
             Stmt::Function(ref _name, ref parameters, ref statement) => {
@@ -90,10 +88,7 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(
-                                parameter.identifier.clone(),
-                                &mut self.count,
-                            ),
+                            SymbolEntry::new(parameter.identifier.clone(), self.count),
                         );
                     }
                 }
@@ -116,12 +111,11 @@ impl Compiler {
     }
 
     fn compile_expr(&mut self, expr: &Meta<Expr>) -> usize {
-        let curr_mem_loc = self.count + 4;
+        self.count += 4;
+        let curr_mem_loc = self.count;
         let mut return_mem = curr_mem_loc;
-        let mut val = "".to_string();
         match expr.inside {
             Expr::Binary(ref op, ref e1, ref e2) => {
-                val = format!("{:?}", op);
                 match op {
                     Operator::LogicalAnd => {
                         let label1 = format!(".And1{}", curr_mem_loc);
@@ -254,11 +248,9 @@ impl Compiler {
                 };
             }
             Expr::Unary(ref op, ref e1) => {
-                val = format!("{:?}", op);
                 match op {
                     Operator::PreIncr | Operator::PreDecr => {
                         if let Expr::Identifier(ref name) = e1.inside {
-                            val = name.to_string();
                             if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
                                 self.stmts.push(
                                     format!("ldr r2, ={}", OFFSET + var.mem_loc),
@@ -289,7 +281,6 @@ impl Compiler {
                     }
                     Operator::PostIncr | Operator::PostDecr => {
                         if let Expr::Identifier(ref name) = e1.inside {
-                            val = name.to_string();
                             if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
                                 self.stmts.push(
                                     format!("ldr r2, ={}", OFFSET + var.mem_loc),
@@ -348,11 +339,11 @@ impl Compiler {
                 let rhs_val = self.compile_expr(&*rhs);
                 if let Expr::Identifier(ref name) = lhs.inside {
                     if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
-                        val = format!("Assign({})", var.name);
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + rhs_val));
                         self.stmts.push(
                             format!("str r3, ={}", OFFSET + var.mem_loc),
                         );
+                        return_mem = var.mem_loc;
                     } else {
                         let pos = get_pos(&self.source_code, expr.byte_offset);
                         println!(
@@ -369,7 +360,6 @@ impl Compiler {
             }
             Expr::Identifier(ref name) => {
                 if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
-                    val = var.name.clone();
                     return_mem = var.mem_loc;
                 } else {
                     let pos = get_pos(&self.source_code, expr.byte_offset);
@@ -382,7 +372,6 @@ impl Compiler {
                 }
             }
             Expr::Number(num) => {
-                val = num.to_string();
                 self.stmts.push(
                     format!(".equ const{}, {}", curr_mem_loc, num),
                 );
@@ -393,11 +382,6 @@ impl Compiler {
             }
             _ => (),
         };
-
-        let curr_symbol = SymbolEntry::new(val, &mut self.count);
-        if let Some(symbol_table) = self.symbol_tables.first_mut() {
-            symbol_table.insert(expr.byte_offset.to_string(), curr_symbol.clone());
-        }
 
         return_mem
     }
