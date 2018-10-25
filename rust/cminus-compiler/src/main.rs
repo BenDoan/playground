@@ -39,7 +39,6 @@ fn handle_ast(ast: &Program, source_code: &String) {
     }
 }
 
-
 fn parse_program(program_string: &String) -> Option<Program> {
     let maybe_ast = parser::ProgramParser::new().parse(program_string);
     match maybe_ast {
@@ -48,13 +47,13 @@ fn parse_program(program_string: &String) -> Option<Program> {
             match e {
                 ParseError::UnrecognizedToken { token, .. } => {
                     if let Some((byte, ..)) = token {
-                        let (line, col) = get_pos(program_string, byte);
-                        println!("Parse Error at line: {}, col: {}", line, col);
+                        let (line, _) = get_pos(program_string, byte);
+                        println!("Syntax Error at line: {}", line);
                     }
                 }
                 ParseError::InvalidToken { location } => {
-                    let (line, col) = get_pos(program_string, location);
-                    println!("Invalid token at line {}, col: {}", line, col);
+                    let (line, _) = get_pos(program_string, location);
+                    println!("Invalid token at line {}", line);
                 }
                 misc @ _ => println!("{:?}", misc),
             }
@@ -62,33 +61,6 @@ fn parse_program(program_string: &String) -> Option<Program> {
         }
     }
 }
-
-// fn add_line_nums<'a>(program: &'a Program, program_str: &String) -> &'a Program {
-//     fn traverse_stmt(stmt: &mut Meta<Stmt>, program_str: &String) {
-//         // let mut stmt = stmt;
-//         stmt.line_num = Some(get_line(program_str, stmt.byte_offset));
-//         // println!("line: {:?}", stmt.line_num);
-
-//         match stmt.inside {
-//             Stmt::Block(ref statements) => {
-//                 for mut statement in statements {
-//                     traverse_stmt(&mut statement, program_str);
-//                 }
-//             }
-//             Stmt::Declaration(..) => (),
-//             Stmt::Function(.., ref mut statement) => traverse_stmt(statement, program_str),
-//             Stmt::While(_, ref mut statement) => traverse_stmt(statement, program_str),
-//             Stmt::For(.., ref mut statement) => traverse_stmt(statement, program_str),
-//             _ => (),
-//         }
-//     }
-
-//     for mut statement in program {
-//         traverse_stmt(&mut statement, program_str);
-//     }
-
-//     program
-// }
 
 #[cfg(test)]
 mod tests {

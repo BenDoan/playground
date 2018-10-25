@@ -306,9 +306,8 @@ impl Compiler {
                             } else {
                                 let pos = get_pos(&self.source_code, expr.byte_offset);
                                 return Err(CompilationError::new(format!(
-                                    "Variable not found at line {}, col: {}",
+                                    "Variable not found at line {}",
                                     pos.0,
-                                    pos.1
                                 )));
                             }
                         } else {
@@ -341,9 +340,8 @@ impl Compiler {
                             } else {
                                 let pos = get_pos(&self.source_code, expr.byte_offset);
                                 return Err(CompilationError::new(format!(
-                                    "Variable not found at line {}, col: {}",
+                                    "Variable not found at line {}",
                                     pos.0,
-                                    pos.1
                                 )));
                             }
                         } else {
@@ -392,10 +390,9 @@ impl Compiler {
                     } else {
                         let pos = get_pos(&self.source_code, expr.byte_offset);
                         return Err(CompilationError::new(format!(
-                            "Trying assign to undeclared variable {} at line: {}, col: {}",
+                            "Assigning to undeclared variable {} at line: {}",
                             name,
                             pos.0,
-                            pos.1
                         )));
                     }
                 } else {
@@ -412,10 +409,9 @@ impl Compiler {
                 } else {
                     let pos = get_pos(&self.source_code, expr.byte_offset);
                     return Err(CompilationError::new(format!(
-                        "Trying to get undeclared variable {} at line: {}, col: {}",
+                        "Using undeclared variable {} at line {}",
                         name,
                         pos.0,
-                        pos.1
                     )));
                 }
             }
