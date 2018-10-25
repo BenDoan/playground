@@ -33,8 +33,10 @@ fn main() {
 }
 
 fn handle_ast(ast: &Program, source_code: &String) {
-    let stmts = compiler::Compiler::new(source_code.clone()).compile(ast);
-    println!("{}", stmts.join("\n"));
+    match compiler::Compiler::new(source_code.clone()).compile(ast) {
+        Ok(stmts) => println!("{}", stmts.join("\n")),
+        Err(err) => println!("Compilation Error: {}", err),
+    }
 }
 
 
@@ -47,7 +49,7 @@ fn parse_program(program_string: &String) -> Option<Program> {
                 ParseError::UnrecognizedToken { token, .. } => {
                     if let Some((byte, ..)) = token {
                         let (line, col) = get_pos(program_string, byte);
-                        println!("Error at line: {}, col: {}", line, col);
+                        println!("Parse Error at line: {}, col: {}", line, col);
                     }
                 }
                 ParseError::InvalidToken { location } => {

@@ -1,10 +1,39 @@
 use ast::{Meta, Program, Stmt, Expr, Operator};
 use std::collections::HashMap;
 use util::get_pos;
+use std::error::Error;
+use std::fmt;
 
 const OFFSET: usize = 6010000;
 
 type SymbolTables = Vec<HashMap<String, SymbolEntry>>;
+
+#[derive(Debug, Clone)]
+pub struct CompilationError {
+    msg: String,
+}
+
+impl CompilationError {
+    fn new(msg: String) -> CompilationError {
+        CompilationError { msg: msg }
+    }
+}
+
+impl fmt::Display for CompilationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl Error for CompilationError {
+    fn description(&self) -> &str {
+        self.msg.as_str()
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        None
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SymbolEntry {
@@ -13,10 +42,11 @@ pub struct SymbolEntry {
 }
 
 impl SymbolEntry {
-    pub fn new(name: String, mem_loc: usize) -> SymbolEntry {
+    pub fn new(name: String, count: &mut usize) -> SymbolEntry {
+        *count += 4;
         SymbolEntry {
             name: name,
-            mem_loc: mem_loc,
+            mem_loc: *count,
         }
     }
 }
@@ -38,9 +68,9 @@ impl Compiler {
         }
     }
 
-    pub fn compile(&mut self, program: &Program) -> Vec<String> {
+    pub fn compile(&mut self, program: &Program) -> Result<Vec<String>, CompilationError> {
         for statement in program {
-            self.compile_stmt(statement);
+            self.compile_stmt(statement)?;
         }
 
         self.stmts.push(format!("swi 0x11"));
@@ -54,21 +84,22 @@ impl Compiler {
         }
 
 
-        [symbol_table_comments.as_slice(), self.stmts.as_slice()].concat()
+        Ok(
+            [symbol_table_comments.as_slice(), self.stmts.as_slice()].concat(),
+        )
     }
 
-    fn compile_stmt(&mut self, stmt: &Meta<Stmt>) {
+    fn compile_stmt(&mut self, stmt: &Meta<Stmt>) -> Result<(), CompilationError> {
         self.stmts.push(format!(
             "\n; line {}",
             get_pos(&self.source_code, stmt.byte_offset).0
         ));
-        self.count += 4;
 
         match stmt.inside {
             Stmt::Block(ref statements) => {
                 self.symbol_tables.push(HashMap::new());
                 for stmt in statements {
-                    self.compile_stmt(&stmt);
+                    self.compile_stmt(&stmt)?;
                 }
                 self.symbol_tables.pop();
             }
@@ -77,10 +108,12 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(parameter.identifier.clone(), self.count),
+                            SymbolEntry::new(
+                                parameter.identifier.clone(),
+                                &mut self.count,
+                            ),
                         );
                     }
-                    self.count += 4;
                 }
             }
             Stmt::Function(ref _name, ref parameters, ref statement) => {
@@ -88,29 +121,33 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(parameter.identifier.clone(), self.count),
+                            SymbolEntry::new(
+                                parameter.identifier.clone(),
+                                &mut self.count,
+                            ),
                         );
                     }
                 }
-                self.compile_stmt(&*statement);
+                self.compile_stmt(&*statement)?;
             }
             Stmt::Write(ref expr) => {
-                let expr_val = self.compile_expr(&expr);
+                let expr_val = self.compile_expr(&expr)?;
                 self.stmts.push(format!("mov r0, #1")); // configure for stdout
                 self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
                 self.stmts.push(format!("swi 0x6b")); // print val in r1
             }
-            Stmt::While(_, ref statement) => self.compile_stmt(&*statement),
-            Stmt::For(_, _, _, ref statement) => self.compile_stmt(&*statement),
+            Stmt::While(_, ref statement) => self.compile_stmt(&*statement)?,
+            Stmt::For(_, _, _, ref statement) => self.compile_stmt(&*statement)?,
             Stmt::Expr(ref expr) => {
-                self.compile_expr(&expr);
+                self.compile_expr(&expr)?;
             }
             _ => (),
 
         }
+        Ok(())
     }
 
-    fn compile_expr(&mut self, expr: &Meta<Expr>) -> usize {
+    fn compile_expr(&mut self, expr: &Meta<Expr>) -> Result<usize, CompilationError> {
         self.count += 4;
         let curr_mem_loc = self.count;
         let mut return_mem = curr_mem_loc;
@@ -120,12 +157,12 @@ impl Compiler {
                     Operator::LogicalAnd => {
                         let label1 = format!(".And1{}", curr_mem_loc);
                         let label2 = format!(".And2{}", curr_mem_loc);
-                        let e1_loc = self.compile_expr(&*e1);
+                        let e1_loc = self.compile_expr(&*e1)?;
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_loc));
                         self.stmts.push(format!("cmp r2, #0"));
                         self.stmts.push(format!("beq {}", label1));
 
-                        let e2_loc = self.compile_expr(&*e2);
+                        let e2_loc = self.compile_expr(&*e2)?;
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + e2_loc));
 
                         self.stmts.push(format!("cmp r3, #0"));
@@ -144,12 +181,12 @@ impl Compiler {
                         let label1 = format!(".Or1{}", curr_mem_loc);
                         let label2 = format!(".Or2{}", curr_mem_loc);
                         let label3 = format!(".Or3{}", curr_mem_loc);
-                        let e1_loc = self.compile_expr(&*e1);
+                        let e1_loc = self.compile_expr(&*e1)?;
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_loc));
                         self.stmts.push(format!("cmp r2, #0"));
                         self.stmts.push(format!("bne {}", label1));
 
-                        let e2_loc = self.compile_expr(&*e2);
+                        let e2_loc = self.compile_expr(&*e2)?;
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + e2_loc));
 
                         self.stmts.push(format!("cmp r3, #0"));
@@ -169,8 +206,8 @@ impl Compiler {
                     }
                     Operator::Greater | Operator::GreaterEqual | Operator::Less |
                     Operator::LessEqual | Operator::Equal | Operator::NotEqual => {
-                        let e1_loc = self.compile_expr(&*e1);
-                        let e2_loc = self.compile_expr(&*e2);
+                        let e1_loc = self.compile_expr(&*e1)?;
+                        let e2_loc = self.compile_expr(&*e2)?;
                         self.stmts.push(format!("mov r1, #0"));
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_loc));
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + e2_loc));
@@ -193,8 +230,8 @@ impl Compiler {
                         let label_start = format!(".start{}", curr_mem_loc);
                         let label_end = format!(".end{}", curr_mem_loc);
 
-                        let e1_loc = self.compile_expr(&*e1);
-                        let e2_loc = self.compile_expr(&*e2);
+                        let e1_loc = self.compile_expr(&*e1)?;
+                        let e2_loc = self.compile_expr(&*e2)?;
                         self.stmts.push(format!("ldr r1, ={}", OFFSET + e1_loc));
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e2_loc));
                         self.stmts.push(format!("mov r3, #0"));
@@ -224,8 +261,8 @@ impl Compiler {
 
                     }
                     _ => {
-                        let e1_val = self.compile_expr(&*e1);
-                        let e2_val = self.compile_expr(&*e2);
+                        let e1_val = self.compile_expr(&*e1)?;
+                        let e2_val = self.compile_expr(&*e2)?;
                         let instruction_name = match op {
                             Operator::Add => "add",
                             Operator::Subtract => "sub",
@@ -268,15 +305,19 @@ impl Compiler {
                                 return_mem = var.mem_loc;
                             } else {
                                 let pos = get_pos(&self.source_code, expr.byte_offset);
-                                println!("Variable not found at line {}, col: {}", pos.0, pos.1);
+                                return Err(CompilationError::new(format!(
+                                    "Variable not found at line {}, col: {}",
+                                    pos.0,
+                                    pos.1
+                                )));
                             }
                         } else {
                             let line = get_pos(&self.source_code, expr.byte_offset).0;
-                            println!(
+                            return Err(CompilationError::new(format!(
                                 "{:?} can only be used on a variable, error at line {}",
                                 op,
                                 line
-                            );
+                            )));
                         }
                     }
                     Operator::PostIncr | Operator::PostDecr => {
@@ -299,19 +340,23 @@ impl Compiler {
                                 return_mem = curr_mem_loc;
                             } else {
                                 let pos = get_pos(&self.source_code, expr.byte_offset);
-                                println!("Variable not found at line {}, col: {}", pos.0, pos.1);
+                                return Err(CompilationError::new(format!(
+                                    "Variable not found at line {}, col: {}",
+                                    pos.0,
+                                    pos.1
+                                )));
                             }
                         } else {
                             let line = get_pos(&self.source_code, expr.byte_offset).0;
-                            println!(
+                            return Err(CompilationError::new(format!(
                                 "{:?} can only be used on a variable, error at line {}",
                                 op,
                                 line
-                            );
+                            )));
                         }
                     }
                     Operator::Negate => {
-                        let e1_val = self.compile_expr(&*e1);
+                        let e1_val = self.compile_expr(&*e1)?;
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
                         self.stmts.push(format!("rsb r2, r2, #0"));
                         self.stmts.push(
@@ -319,11 +364,11 @@ impl Compiler {
                         );
                     }
                     Operator::Positive => {
-                        let e1_val = self.compile_expr(&*e1);
+                        let e1_val = self.compile_expr(&*e1)?;
                         return_mem = e1_val;
                     }
                     Operator::Not => {
-                        let e1_val = self.compile_expr(&*e1);
+                        let e1_val = self.compile_expr(&*e1)?;
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
                         self.stmts.push(format!("cmp r2, #0"));
                         self.stmts.push(format!("moveq r3, #1"));
@@ -336,7 +381,7 @@ impl Compiler {
                 }
             }
             Expr::Assignment(ref lhs, ref rhs) => {
-                let rhs_val = self.compile_expr(&*rhs);
+                let rhs_val = self.compile_expr(&*rhs)?;
                 if let Expr::Identifier(ref name) = lhs.inside {
                     if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + rhs_val));
@@ -346,16 +391,19 @@ impl Compiler {
                         return_mem = var.mem_loc;
                     } else {
                         let pos = get_pos(&self.source_code, expr.byte_offset);
-                        println!(
+                        return Err(CompilationError::new(format!(
                             "Trying assign to undeclared variable {} at line: {}, col: {}",
                             name,
                             pos.0,
                             pos.1
-                        );
+                        )));
                     }
                 } else {
                     let line = get_pos(&self.source_code, expr.byte_offset).0;
-                    println!("Can only assign to a variable, error at line {}", line);
+                    return Err(CompilationError::new(format!(
+                        "Can only assign to a variable, error at line {}",
+                        line
+                    )));
                 }
             }
             Expr::Identifier(ref name) => {
@@ -363,12 +411,12 @@ impl Compiler {
                     return_mem = var.mem_loc;
                 } else {
                     let pos = get_pos(&self.source_code, expr.byte_offset);
-                    println!(
+                    return Err(CompilationError::new(format!(
                         "Trying to get undeclared variable {} at line: {}, col: {}",
                         name,
                         pos.0,
                         pos.1
-                    );
+                    )));
                 }
             }
             Expr::Number(num) => {
@@ -383,7 +431,7 @@ impl Compiler {
             _ => (),
         };
 
-        return_mem
+        Ok(return_mem)
     }
 }
 
