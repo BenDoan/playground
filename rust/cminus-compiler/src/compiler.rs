@@ -136,10 +136,43 @@ impl Compiler {
                 self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
                 self.stmts.push(format!("swi 0x6b")); // print val in r1
             }
-            Stmt::While(_, ref statement) => self.compile_stmt(&*statement)?,
-            Stmt::For(_, _, _, ref statement) => self.compile_stmt(&*statement)?,
             Stmt::Expr(ref expr) => {
                 self.compile_expr(&expr)?;
+            }
+            Stmt::If(ref expr, ref statement) => {
+                let end = format!("ifend{}", stmt.byte_offset);
+                let expr_val = self.compile_expr(&*expr)?;
+                self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
+                self.stmts.push(format!("cmp r1, #0"));
+                self.stmts.push(format!("beq {}", end));
+                self.compile_stmt(&*statement)?;
+                self.stmts.push(format!("{}:", end));
+            }
+            Stmt::While(ref expr, ref statement) => {
+                let start = format!("whilestart{}", stmt.byte_offset);
+                let end = format!("whileend{}", stmt.byte_offset);
+                self.stmts.push(format!("{}:", start));
+                let expr_val = self.compile_expr(&*expr)?;
+                self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
+                self.stmts.push(format!("cmp r1, #0"));
+                self.stmts.push(format!("beq {}", end));
+                self.compile_stmt(&*statement)?;
+                self.stmts.push(format!("b {}", start));
+                self.stmts.push(format!("{}:", end));
+            }
+            Stmt::For(ref e1, ref e2, ref e3, ref statement) => {
+                let start = format!("forstart{}", stmt.byte_offset);
+                let end = format!("forend{}", stmt.byte_offset);
+                self.compile_expr(&e1)?;
+                self.stmts.push(format!("{}:", start));
+                let e2_val = self.compile_expr(&e2)?;
+                self.stmts.push(format!("ldr r1, ={}", OFFSET + e2_val));
+                self.stmts.push(format!("cmp r1, #0"));
+                self.stmts.push(format!("beq {}", end));
+                self.compile_stmt(&*statement)?;
+                self.compile_expr(&e3)?;
+                self.stmts.push(format!("b {}", start));
+                self.stmts.push(format!("{}:", end));
             }
             _ => (),
 
