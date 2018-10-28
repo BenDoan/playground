@@ -39,14 +39,16 @@ impl Error for CompilationError {
 pub struct SymbolEntry {
     name: String,
     mem_loc: usize,
+    params: Option<Vec<String>>,
 }
 
 impl SymbolEntry {
-    pub fn new(name: String, count: &mut usize) -> SymbolEntry {
+    pub fn new(name: String, count: &mut usize, params: Option<Vec<String>>) -> SymbolEntry {
         *count += 4;
         SymbolEntry {
             name: name,
             mem_loc: *count,
+            params: params,
         }
     }
 }
@@ -69,6 +71,7 @@ impl Compiler {
     }
 
     pub fn compile(&mut self, program: &Program) -> Result<Vec<String>, CompilationError> {
+        self.stmts.push(format!("b functionmain"));
         for statement in program {
             self.compile_stmt(statement)?;
         }
@@ -111,12 +114,23 @@ impl Compiler {
                             SymbolEntry::new(
                                 parameter.identifier.clone(),
                                 &mut self.count,
+                                None,
                             ),
                         );
                     }
                 }
             }
-            Stmt::Function(ref _name, ref parameters, ref statement) => {
+            Stmt::Function(ref name, ref parameters, ref statement) => {
+                if let Some(table_for_scope) = self.symbol_tables.last_mut() {
+                    table_for_scope.insert(
+                        name.clone(),
+                        SymbolEntry::new(
+                            name.clone(),
+                            &mut self.count,
+                            Some(parameters.iter().map(|p| p.identifier.clone()).collect()),
+                        ),
+                    );
+                }
                 for parameter in parameters {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
@@ -124,17 +138,40 @@ impl Compiler {
                             SymbolEntry::new(
                                 parameter.identifier.clone(),
                                 &mut self.count,
+                                None,
                             ),
                         );
                     }
                 }
+                self.count += 4;
+                let return_loc = self.count;
+                let label = format!("function{}", name);
+                self.stmts.push(format!("{}:", label));
+                self.stmts.push(format!("str lr, ={}", OFFSET + return_loc));
                 self.compile_stmt(&*statement)?;
+                self.stmts.push(format!("ldr r0, ={}", OFFSET + return_loc));
+                self.stmts.push(format!("mov pc, r0"));
             }
             Stmt::Write(ref expr) => {
                 let expr_val = self.compile_expr(&expr)?;
                 self.stmts.push(format!("mov r0, #1")); // configure for stdout
                 self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
                 self.stmts.push(format!("swi 0x6b")); // print val in r1
+            }
+            Stmt::Read(ref name) => {
+                if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
+                    self.stmts.push(format!("mov r0, #0")); // configure for stdin
+                    self.stmts.push(format!("swi 0x6c")); // read val to r0
+                    self.stmts.push(
+                        format!("str r0, ={}", OFFSET + var.mem_loc),
+                    );
+                } else {
+                    let pos = get_pos(&self.source_code, stmt.byte_offset);
+                    return Err(CompilationError::new(format!(
+                        "Variable not found at line {}",
+                        pos.0,
+                    )));
+                }
             }
             Stmt::Expr(ref expr) => {
                 self.compile_expr(&expr)?;
@@ -410,6 +447,13 @@ impl Compiler {
                     }
                     _ => (),
                 }
+            }
+            Expr::FunctionCall(ref name, ref args) => {
+                for arg in args {
+                    let expr_val = self.compile_expr(&*arg)?;
+                }
+                let label = format!("function{}", name);
+                self.stmts.push(format!("bl {}", label));
             }
             Expr::Assignment(ref lhs, ref rhs) => {
                 let rhs_val = self.compile_expr(&*rhs)?;
