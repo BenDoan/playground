@@ -37,18 +37,16 @@ impl Error for CompilationError {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SymbolEntry {
-    name: String,
     mem_loc: usize,
-    params: Option<Vec<String>>,
+    param_locs: Option<Vec<usize>>,
 }
 
 impl SymbolEntry {
-    pub fn new(name: String, count: &mut usize, params: Option<Vec<String>>) -> SymbolEntry {
+    pub fn new(count: &mut usize, param_locs: Option<Vec<usize>>) -> SymbolEntry {
         *count += 4;
         SymbolEntry {
-            name: name,
             mem_loc: *count,
-            params: params,
+            param_locs: param_locs,
         }
     }
 }
@@ -111,38 +109,30 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(
-                                parameter.identifier.clone(),
-                                &mut self.count,
-                                None,
-                            ),
+                            SymbolEntry::new(&mut self.count, None),
                         );
                     }
                 }
             }
             Stmt::Function(ref name, ref parameters, ref statement) => {
-                if let Some(table_for_scope) = self.symbol_tables.last_mut() {
-                    table_for_scope.insert(
-                        name.clone(),
-                        SymbolEntry::new(
-                            name.clone(),
-                            &mut self.count,
-                            Some(parameters.iter().map(|p| p.identifier.clone()).collect()),
-                        ),
-                    );
-                }
+                let mut param_locs = vec![];
                 for parameter in parameters {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(
-                                parameter.identifier.clone(),
-                                &mut self.count,
-                                None,
-                            ),
+                            SymbolEntry::new(&mut self.count, None),
                         );
+                        param_locs.push(self.count);
                     }
                 }
+
+                if let Some(table_for_scope) = self.symbol_tables.last_mut() {
+                    table_for_scope.insert(
+                        name.clone(),
+                        SymbolEntry::new(&mut self.count, Some(param_locs)),
+                    );
+                }
+
                 self.count += 4;
                 let return_loc = self.count;
                 let label = format!("function{}", name);
@@ -449,11 +439,22 @@ impl Compiler {
                 }
             }
             Expr::FunctionCall(ref name, ref args) => {
+                let mut expr_vals = vec![];
                 for arg in args {
-                    let expr_val = self.compile_expr(&*arg)?;
+                    expr_vals.push(self.compile_expr(&*arg)?);
                 }
-                let label = format!("function{}", name);
-                self.stmts.push(format!("bl {}", label));
+                if let Some(ref function_def) = get_var(name.clone(), &self.symbol_tables) {
+                    if let Some(ref param_locs) = function_def.param_locs {
+                        let label = format!("function{}", name);
+                        for (i, expr_val) in expr_vals.iter().enumerate() {
+                            if let Some(param_loc) = param_locs.get(i) {
+                                self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
+                                self.stmts.push(format!("str r1, ={}", OFFSET + param_loc));
+                            }
+                        }
+                        self.stmts.push(format!("bl {}", label));
+                    }
+                }
             }
             Expr::Assignment(ref lhs, ref rhs) => {
                 let rhs_val = self.compile_expr(&*rhs)?;
