@@ -39,14 +39,20 @@ impl Error for CompilationError {
 pub struct SymbolEntry {
     mem_loc: usize,
     param_locs: Option<Vec<usize>>,
+    size: Option<i32>,
 }
 
 impl SymbolEntry {
-    pub fn new(count: &mut usize, param_locs: Option<Vec<usize>>) -> SymbolEntry {
+    pub fn new(
+        count: &mut usize,
+        param_locs: Option<Vec<usize>>,
+        size: Option<i32>,
+    ) -> SymbolEntry {
         *count += 4;
         SymbolEntry {
             mem_loc: *count,
             param_locs: param_locs,
+            size: size,
         }
     }
 }
@@ -106,10 +112,20 @@ impl Compiler {
             }
             Stmt::Declaration(ref parameters) => {
                 for parameter in parameters {
+                    let size = if parameter.sub_arrays.len() > 0 {
+                        let mut size = 1;
+                        for sub_array in parameter.sub_arrays.clone() {
+                            size *= sub_array;
+                        }
+                        Some(size)
+                    } else {
+                        None
+                    };
+
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(&mut self.count, None),
+                            SymbolEntry::new(&mut self.count, None, size),
                         );
                     }
                 }
@@ -120,7 +136,7 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(&mut self.count, None),
+                            SymbolEntry::new(&mut self.count, None, None),
                         );
                         param_locs.push(self.count);
                     }
@@ -129,7 +145,7 @@ impl Compiler {
                 if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                     table_for_scope.insert(
                         name.clone(),
-                        SymbolEntry::new(&mut self.count, Some(param_locs)),
+                        SymbolEntry::new(&mut self.count, Some(param_locs), None),
                     );
                 }
 
