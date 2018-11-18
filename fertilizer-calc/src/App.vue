@@ -31,7 +31,7 @@
             <td scope="row">
               <span>
                 <a href="#">
-                  <span aria-hidden="true" v-on:click="recipeComponents.splice(index, 1)">&times;</span>
+                  <span aria-hidden="true" v-on:click="onDelete(index)">&times;</span>
                 </a>
                 {{component[0]}}
               </span>
@@ -69,19 +69,8 @@
 </template>
 
 <script>
-import Big from 'big.js';
-
-const recipes = {
-  "32% UAN": {
-    "Urea": ".35",
-    "Ammonium Nitrate": ".45",
-    "Water": ".2",
-  },
-  "10-34-00": {
-    "Ammonium Polyphosphates": ".56",
-    "Water": ".45",
-  },
-}
+import Big from 'big.js'
+import recipes from '../recipes.json'
 
 export default {
   name: 'app',
@@ -113,21 +102,27 @@ export default {
       }
       return newRecipes
     },
+    calc() {
+      const resultPercents = {}
+      for (const [recipe, percent] of this.recipeComponents) {
+        for (const [baseIngredient, baseIngredientPercent] of Object.entries(this.recipes[recipe])) {
+          const curr = resultPercents[baseIngredient] || Big(0)
+          resultPercents[baseIngredient] = curr.add(Big(percent).mul(baseIngredientPercent))
+        }
+      }
+      this.resultPercents = resultPercents;
+
+      this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+    },
     onAdd: function() {
       if (this.chosenRecipe && this.chosenPercent) {
         this.recipeComponents.push([this.chosenRecipe, this.chosenPercent*.01])
-
-        const resultPercents = {}
-        for (const [recipe, percent] of this.recipeComponents) {
-          for (const [baseIngredient, baseIngredientPercent] of Object.entries(this.recipes[recipe])) {
-            const curr = resultPercents[baseIngredient] || Big(0)
-            resultPercents[baseIngredient] = curr.add(Big(percent).mul(baseIngredientPercent))
-          }
-        }
-        this.resultPercents = resultPercents;
-
-        this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+        this.calc()
       }
+    },
+    onDelete: function(index) {
+      this.recipeComponents.splice(index, 1)
+      this.calc()
     },
   }
 }
