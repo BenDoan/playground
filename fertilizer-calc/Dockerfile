@@ -1,2 +1,6 @@
+FROM node
+ADD . fertilizer
+RUN cd /fertilizer && yarn && yarn build
+
 FROM nginx
-COPY dist/ /usr/share/nginx/html
+COPY --from=0 /fertilizer/dist /usr/share/nginx/html
