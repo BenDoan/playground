@@ -3,19 +3,23 @@
     <div class="row">
       <h3>Fertilizer Calc</h3>
     </div>
-    <div class="form-group" required>
-      <select v-model="chosenRecipe" class="form-control">
-        <option value="" disabled selected>Select a recipe</option>
-        <option v-for="name in Object.keys(recipes)" :key="name">{{name}}</option>
-      </select>
-    </div>
-    <div class="input-group mb-3">
-      <input v-model="chosenPercent" class="form-control" type="number" min="1" max="100" step="0.01" placeholder="Percent" />
-      <div class="input-group-append">
-        <span class="input-group-text">%</span>
+    <form class="form-inline" v-on:submit.prevent="onAdd">
+      <div class="form-group mr-2" required>
+        <label class="sr-only" for="product-input">Product</label>
+        <select v-model="chosenProduct" class="form-control" id="product-input">
+          <option :value="null" disabled>Product</option>
+          <option v-for="name in Object.keys(recipes)" :key="name">{{name}}</option>
+        </select>
       </div>
-    </div>
-    <a class="btn btn-primary" v-on:click="onAdd">Add</a>
+      <div class="input-group mr-2">
+        <label class="sr-only" for="percent-input">Percent</label>
+        <input v-model="chosenPercent" class="form-control" type="number" min="1" max="100" step="0.01" placeholder="Percent" id="percent-input"/>
+        <div class="input-group-append">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <a class="btn btn-primary text-white" v-on:click="onAdd">Add</a>
+    </form>
 
     <hr>
 
@@ -23,7 +27,7 @@
       <h3>Recipe</h3>
       <table class="table">
         <thead>
-          <th scope="col">Recipe</th>
+          <th scope="col">Product</th>
           <th scope="col">Percent</th>
         </thead>
         <tbody>
@@ -78,16 +82,11 @@ export default {
     return {
       recipes: this.convertRecipes(recipes),
       recipeComponents: [],
-      chosenRecipe: null,
+      chosenProduct: null,
       chosenPercent: null,
       resultPercents: null,
       totalResultPercent: 0,
     }
-  },
-  computed: {
-    allIngredients: function() {
-      return [...new Set([].concat(...Object.values(this.recipes).map(x => Object.keys(x))))]
-    },
   },
   methods: {
     convertRecipes(recipes) {
@@ -115,9 +114,11 @@ export default {
       this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
     },
     onAdd: function() {
-      if (this.chosenRecipe && this.chosenPercent) {
-        this.recipeComponents.push([this.chosenRecipe, this.chosenPercent*.01])
+      if (this.chosenProduct && this.chosenPercent) {
+        this.recipeComponents.push([this.chosenProduct, this.chosenPercent * .01])
         this.calc()
+        this.chosenProduct = null;
+        this.chosenPercent = null;
       }
     },
     onDelete: function(index) {
