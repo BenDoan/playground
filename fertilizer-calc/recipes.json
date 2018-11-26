@@ -1,23 +1,23 @@
 {
     "32% UAN": {
-        "Urea": ".353",
+        "Urea": ".3525",
         "Ammonium Nitrate": ".445",
-        "Water": ".203"
+        "Water": ".2025"
     },
     "30% UAN": {
-        "Urea": "0.33",
-        "Ammonium Nitrate": "0.417",
-        "Water": "0.252"
+        "Urea": "0.3305",
+        "Ammonium Nitrate": "0.4172",
+        "Water": "0.2523"
     },
     "29% UAN": {
-        "Urea": "0.319",
-        "Ammonium Nitrate": "0.403",
-        "Water": "0.277"
+        "Urea": "0.3195",
+        "Ammonium Nitrate": "0.4033",
+        "Water": "0.2772"
     },
     "28% UAN": {
-        "Urea": "0.308",
-        "Ammonium Nitrate": "0.389",
-        "Water": "0.302"
+        "Urea": "0.3084",
+        "Ammonium Nitrate": "0.3894",
+        "Water": "0.3022"
     },
     "10-34-00": {
         "Ammonium Polyphosphates": ".555",
@@ -41,7 +41,7 @@
         "Ammonium Thiosulfate": "0.57",
         "Ammonium Sulfate": "0.03",
         "Ammonium Sulfite": "0.025",
-        "Waer": "0.395"
+        "Water": "0.395"
     },
     "Ammonium Sulfate (21-0-0-24)": {
         "Ammonium Sulfate": "1.00"

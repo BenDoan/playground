@@ -3,6 +3,7 @@
     <div class="row">
       <h3>Fertilizer Calc</h3>
     </div>
+    <div v-for="error in errors" :key="error" class="text-danger">{{error}}</div>
     <form class="form-inline" v-on:submit.prevent="onAdd">
       <div class="form-group mr-2" required>
         <label class="sr-only" for="product-input">Product</label>
@@ -95,17 +96,21 @@ export default {
   name: 'app',
   data: function () {
     return {
-      recipes: this.convertRecipes(recipes),
+      recipes: {},
       recipeComponents: [],
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: null,
       totalResultPercent: Big(0),
       concentrations: {},
+      errors: [],
     }
   },
+  mounted: function () {
+    this.recipes = this.convertRecipes(recipes);
+  },
   methods: {
-    convertRecipes(recipes) {
+    convertRecipes: function(recipes) {
       const newRecipes = {}
       for (const [recipeName, recipe] of Object.entries(recipes)) {
         for (const [ingredientName, percentStr] of Object.entries(recipe)) {
@@ -115,14 +120,13 @@ export default {
           try {
             newRecipes[recipeName][ingredientName] = Big(percentStr)
           } catch (error) {
-            // eslint-disable-next-line
-            console.log(error, percentStr);
+            this.errors.push(`Error while parsing "${percentStr}" for ${ingredientName} in ${recipeName}`);
           }
         }
       }
       return newRecipes
     },
-    calc() {
+    calc: function() {
       const resultPercents = {}
       for (const [recipe, percent] of this.recipeComponents) {
         for (const [baseIngredient, baseIngredientPercent] of Object.entries(this.recipes[recipe])) {
@@ -136,6 +140,9 @@ export default {
       const concentrations = {}
       for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
         if (!(ingredient in nutrientConcentrations)) {
+          if (ingredient !== "Water") {
+            this.errors.push("Couldn't find nutrient concentrations for ingredient " + ingredient)
+          }
           continue
         }
         for (const [nutrient, nutrientPercent] of Object.entries(nutrientConcentrations[ingredient])) {
@@ -147,6 +154,7 @@ export default {
     },
     onAdd: function() {
       if (this.chosenProduct && this.chosenPercent) {
+        this.clearErrors();
         this.recipeComponents.push([this.chosenProduct, this.chosenPercent * .01])
         this.calc()
         this.chosenProduct = null;
@@ -154,8 +162,12 @@ export default {
       }
     },
     onDelete: function(index) {
+      this.clearErrors();
       this.recipeComponents.splice(index, 1)
       this.calc()
+    },
+    clearErrors: function() {
+      this.errors = []
     },
   }
 }

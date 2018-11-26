@@ -1,52 +1,55 @@
 {
     "Ammonium Nitrate": {
-        "nitrogen": "0.35"
+        "Nitrogen": "0.35"
     },
-    "Ammonium polyphosphate (from  11 37 0)": {
-        "nitrogen": "0.181",
-        "phosphorous": "0.612"
+    "Ammonium Polyphosphate (from 11-37-0)": {
+        "Nitrogen": "0.181",
+        "Phosphorous": "0.612"
     },
-    "Ammonium Polyphosphate (from 11 34 0)": {
-        "nitrogen": "0.181"
+    "Ammonium Polyphosphate (from 11-34-0)": {
+        "Nitrogen": "0.181"
     },
     "Monoammonium Phosphate": {
-        "nitrogen": "0.122",
-        "phosphorous": "0.617"
+        "Nitrogen": "0.122",
+        "Phosphorous": "0.617"
     },
     "Ammonium Thiosulfate": {
-        "nitrogen": "0.189",
-        "sulfur": "0.433"
+        "Nitrogen": "0.189",
+        "Sulfur": "0.433"
     },
     "Ammonium Sulfite": {
-        "nitrogen": "0.241",
-        "sulfur": "0.276"
+        "Nitrogen": "0.241",
+        "Sulfur": "0.276"
     },
     "Ammonium Hydroxide": {
-        "nitrogen": "0.4"
+        "Nitrogen": "0.4"
     },
-    "Ammonium Polyphosphate (from 10 34 0)": {
-        "phosphorous": "0.612"
+    "Ammonium Polyphosphate (from 10-34-0)": {
+        "Phosphorous": "0.612"
     },
-    "Ortho-Phosphoric Acid": {
-        "phosphorous": "0.724"
+    "Ortho Phosphoric Acid": {
+        "Phosphorous": "0.724"
     },
     "Potassium Chloride": {
-        "potassium": "0.632"
+        "Potassium": "0.632"
     },
     "Potassium Thiosulfate": {
-        "potassium": "0.495",
-        "sulfur": "0.337"
+        "Potassium": "0.495",
+        "Sulfur": "0.337"
     },
     "Ammonium Sulfate": {
-        "sulfur": "0.243"
+        "Sulfur": "0.243"
+    },
+    "Urea": {
+        "Nitrogen": "0.466"
     },
     "Zinc Chloride": {
-        "zinc": "0.48"
+        "Zinc": "0.48"
     },
     "Zinc Oxide": {
-        "zinc": "0.803"
+        "Zinc": "0.803"
     },
-    "9% EDTA zinc chelate": {
-        "zinc": "0.15"
+    "9% EDTA Zinc Chelate": {
+        "Zinc": "0.15"
     }
 }
