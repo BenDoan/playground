@@ -18,10 +18,10 @@
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <a class="btn btn-primary text-white" v-on:click="onAdd">Add</a>
+      <div class="input-group">
+        <button class="btn btn-primary text-white" v-on:click="onAdd">Add</button>
+      </div>
     </form>
-
-    <hr>
 
     <div class="row" v-if="recipeComponents.length > 0">
       <h3>Recipe</h3>
@@ -54,7 +54,7 @@
           <th scope="col">Percent</th>
         </thead>
         <tbody>
-          <tr v-for="([ingredient, percent], index) in Object.entries(resultPercents)" :key="index">
+          <tr v-for="[ingredient, percent] in Object.entries(resultPercents)" :key="ingredient">
             <td scope="row">
                 {{ingredient}}
             </td>
@@ -66,15 +66,30 @@
           </tr>
         </tbody>
       </table>
+
+      <h3>Nutrient Concentrations</h3>
+      <table class="table">
+        <thead>
+          <th scope="col">Nutrient</th>
+          <th scope="col">Percent</th>
+        </thead>
+        <tbody>
+          <tr v-for="[nutrient, percent] in Object.entries(concentrations)" :key="nutrient">
+            <td scope="row">
+                {{nutrient}}
+            </td>
+            <td>{{percent.mul(100).toFixed(2)}}%</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
   </div>
-
 </template>
 
 <script>
 import Big from 'big.js'
 import recipes from '../recipes.json'
+import nutrientConcentrations from '../nutrient-concentrations.json'
 
 export default {
   name: 'app',
@@ -85,7 +100,8 @@ export default {
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: null,
-      totalResultPercent: 0,
+      totalResultPercent: Big(0),
+      concentrations: {},
     }
   },
   methods: {
@@ -96,7 +112,12 @@ export default {
           if (!(recipeName in newRecipes)) {
             newRecipes[recipeName] = {}
           }
-          newRecipes[recipeName][ingredientName] = Big(percentStr)
+          try {
+            newRecipes[recipeName][ingredientName] = Big(percentStr)
+          } catch (error) {
+            // eslint-disable-next-line
+            console.log(error, percentStr);
+          }
         }
       }
       return newRecipes
@@ -110,8 +131,19 @@ export default {
         }
       }
       this.resultPercents = resultPercents;
-
       this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+
+      const concentrations = {}
+      for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
+        if (!(ingredient in nutrientConcentrations)) {
+          continue
+        }
+        for (const [nutrient, nutrientPercent] of Object.entries(nutrientConcentrations[ingredient])) {
+          const curr = concentrations[nutrient] || Big(0)
+          concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
+        }
+      }
+      this.concentrations = concentrations
     },
     onAdd: function() {
       if (this.chosenProduct && this.chosenPercent) {
