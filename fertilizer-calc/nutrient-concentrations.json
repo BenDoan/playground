@@ -27,7 +27,7 @@
     "Ammonium Polyphosphate (from 10-34-0)": {
         "Phosphorous": "0.612"
     },
-    "Ortho Phosphoric Acid": {
+    "Phosphoric Acid": {
         "Phosphorous": "0.724"
     },
     "Potassium Chloride": {
@@ -49,7 +49,7 @@
     "Zinc Oxide": {
         "Zinc": "0.803"
     },
-    "9% EDTA Zinc Chelate": {
+    "EDTA NH3 Complex": {
         "Zinc": "0.15"
     }
 }
