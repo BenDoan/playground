@@ -1,10 +1,11 @@
-use ast::{Meta, Program, Stmt, Expr, Operator};
+use ast::{Meta, Program, Stmt, Expr, Operator, Parameter};
 use std::collections::HashMap;
 use util::get_pos;
 use std::error::Error;
 use std::fmt;
 
 const OFFSET: usize = 6010000;
+const CURRENT_FUNCTION_CALL: &str = "CURRENTFUNCTION";
 
 type SymbolTables = Vec<HashMap<String, SymbolEntry>>;
 
@@ -39,20 +40,20 @@ impl Error for CompilationError {
 pub struct SymbolEntry {
     mem_loc: usize,
     param_locs: Option<Vec<usize>>,
-    size: Option<i32>,
+    parameters: Option<Vec<Parameter>>,
 }
 
 impl SymbolEntry {
     pub fn new(
         count: &mut usize,
         param_locs: Option<Vec<usize>>,
-        size: Option<i32>,
+        parameters: Option<Vec<Parameter>>,
     ) -> SymbolEntry {
         *count += 4;
         SymbolEntry {
             mem_loc: *count,
             param_locs: param_locs,
-            size: size,
+            parameters: parameters,
         }
     }
 }
@@ -90,7 +91,6 @@ impl Compiler {
             }
         }
 
-
         Ok(
             [symbol_table_comments.as_slice(), self.stmts.as_slice()].concat(),
         )
@@ -112,20 +112,14 @@ impl Compiler {
             }
             Stmt::Declaration(ref parameters) => {
                 for parameter in parameters {
-                    let size = if parameter.sub_arrays.len() > 0 {
-                        let mut size = 1;
-                        for sub_array in parameter.sub_arrays.clone() {
-                            size *= sub_array;
-                        }
-                        Some(size)
-                    } else {
-                        None
-                    };
-
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(&mut self.count, None, size),
+                            SymbolEntry::new(
+                                &mut self.count,
+                                None,
+                                Some(vec![parameter.clone()]),
+                            ),
                         );
                     }
                 }
@@ -141,11 +135,17 @@ impl Compiler {
                         param_locs.push(self.count);
                     }
                 }
+                self.count += 4;
+                param_locs.push(self.count);
 
                 if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                     table_for_scope.insert(
                         name.clone(),
-                        SymbolEntry::new(&mut self.count, Some(param_locs), None),
+                        SymbolEntry::new(
+                            &mut self.count,
+                            Some(param_locs),
+                            Some(parameters.clone()),
+                        ),
                     );
                 }
 
@@ -217,8 +217,21 @@ impl Compiler {
                 self.stmts.push(format!("b {}", start));
                 self.stmts.push(format!("{}:", end));
             }
-            _ => (),
-
+            Stmt::Return(ref expr) => {
+                let expr_val = self.compile_expr(&expr)?;
+                if let Some(ref function_def) = get_function_def(&self.symbol_tables) {
+                    if let Some(ref param_locs) = function_def.param_locs {
+                        let return_loc = param_locs.get(0).unwrap();
+                        let return_val_loc = param_locs.get(1).unwrap();
+                        self.stmts.push(format!("ldr r0, ={}", OFFSET + expr_val));
+                        self.stmts.push(
+                            format!("str r0, ={}", OFFSET + return_val_loc),
+                        );
+                        self.stmts.push(format!("ldr r0, ={}", OFFSET + return_loc));
+                        self.stmts.push(format!("mov pc, r0"));
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -455,21 +468,41 @@ impl Compiler {
                 }
             }
             Expr::FunctionCall(ref name, ref args) => {
+                self.count += 4;
+                let return_val_loc = self.count;
+
+                self.count += 4;
+                let return_loc = self.count;
+
                 let mut expr_vals = vec![];
                 for arg in args {
                     expr_vals.push(self.compile_expr(&*arg)?);
                 }
-                if let Some(ref function_def) = get_var(name.clone(), &self.symbol_tables) {
-                    if let Some(ref param_locs) = function_def.param_locs {
-                        let label = format!("function{}", name);
-                        for (i, expr_val) in expr_vals.iter().enumerate() {
-                            if let Some(param_loc) = param_locs.get(i) {
-                                self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
-                                self.stmts.push(format!("str r1, ={}", OFFSET + param_loc));
-                            }
-                        }
-                        self.stmts.push(format!("bl {}", label));
+
+                let function_def = get_var(name.clone(), &self.symbol_tables).unwrap().clone();
+                let param_locs = function_def.param_locs.unwrap();
+
+                if let Some(ref mut table_for_scope) = self.symbol_tables.last_mut() {
+                    table_for_scope.insert(
+                        CURRENT_FUNCTION_CALL.to_string(),
+                        SymbolEntry::new(
+                            &mut self.count,
+                            Some(vec![return_loc, return_val_loc]),
+                            None,
+                        ),
+                    );
+                }
+                let label = format!("function{}", name);
+                for (i, expr_val) in expr_vals.iter().enumerate() {
+                    if let Some(param_loc) = param_locs.get(i) {
+                        self.stmts.push(format!("ldr r1, ={}", OFFSET + expr_val));
+                        self.stmts.push(format!("str r1, ={}", OFFSET + param_loc));
                     }
+                }
+                self.stmts.push(format!("ldr pc, ={}", OFFSET + return_loc));
+                self.stmts.push(format!("bl {}", label));
+                if let Some(return_val_loc) = param_locs.last() {
+                    return_mem = *return_val_loc;
                 }
             }
             Expr::Assignment(ref lhs, ref rhs) => {
@@ -531,6 +564,13 @@ fn get_var<'a>(var_name: String, symbol_tables: &'a SymbolTables) -> Option<&'a 
         if let Some(symbol_entry) = table.get(&var_name) {
             return Some(symbol_entry);
         }
+    }
+    None
+}
+
+fn get_function_def<'a>(symbol_tables: &'a SymbolTables) -> Option<&'a SymbolEntry> {
+    for table in symbol_tables.iter().rev() {
+        return table.get(CURRENT_FUNCTION_CALL);
     }
     None
 }

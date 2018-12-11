@@ -19,8 +19,11 @@
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <div class="input-group">
+      <div class="input-group mr-2">
         <button class="btn btn-primary text-white" v-on:click="onAdd">Add</button>
+      </div>
+      <div v-if="density !== 0">
+        density: {{ density.toFixed(2) }} lbs/gal
       </div>
     </form>
 
@@ -47,7 +50,7 @@
       </table>
     </div>
 
-    <div class="row" v-if="resultPercents">
+    <div class="row" v-if="Object.keys(resultPercents).length > 0">
       <h3>Result</h3>
       <table class="table">
         <thead>
@@ -91,6 +94,7 @@
 import Big from 'big.js'
 import recipes from '../recipes.json'
 import nutrientConcentrations from '../nutrient-concentrations.json'
+import ingredientDensities from '../ingredient-densities.json'
 
 export default {
   name: 'app',
@@ -100,9 +104,10 @@ export default {
       recipeComponents: [],
       chosenProduct: null,
       chosenPercent: null,
-      resultPercents: null,
+      resultPercents: {},
       totalResultPercent: Big(0),
       concentrations: {},
+      density: 0,
       errors: [],
     }
   },
@@ -135,7 +140,11 @@ export default {
         }
       }
       this.resultPercents = resultPercents;
-      this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+      if (this.recipeComponents.length > 0) {
+        this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+      } else {
+        this.totalResultPercent = Big(0);
+      }
 
       const concentrations = {}
       for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
@@ -151,6 +160,12 @@ export default {
         }
       }
       this.concentrations = concentrations
+
+      let density = Big(0);
+      for (const [recipe, percent] of this.recipeComponents) {
+        density = density.add(Big(ingredientDensities[recipe]).mul(percent))
+      }
+      this.density = density
     },
     onAdd: function() {
       if (this.chosenProduct && this.chosenPercent) {

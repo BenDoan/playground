@@ -1,55 +1,56 @@
 {
-    "Ammonium Nitrate": {
-        "Nitrogen": "0.35"
-    },
-    "Ammonium Polyphosphate (from 11-37-0)": {
-        "Nitrogen": "0.181",
-        "Phosphorous": "0.612"
-    },
-    "Ammonium Polyphosphate (from 11-34-0)": {
-        "Nitrogen": "0.181"
-    },
-    "Monoammonium Phosphate": {
-        "Nitrogen": "0.122",
-        "Phosphorous": "0.617"
-    },
-    "Ammonium Thiosulfate": {
-        "Nitrogen": "0.189",
-        "Sulfur": "0.433"
-    },
-    "Ammonium Sulfite": {
-        "Nitrogen": "0.241",
-        "Sulfur": "0.276"
-    },
-    "Ammonium Hydroxide": {
-        "Nitrogen": "0.4"
-    },
-    "Ammonium Polyphosphate (from 10-34-0)": {
-        "Phosphorous": "0.612"
-    },
-    "Phosphoric Acid": {
-        "Phosphorous": "0.724"
-    },
-    "Potassium Chloride": {
-        "Potassium": "0.632"
-    },
-    "Potassium Thiosulfate": {
-        "Potassium": "0.495",
-        "Sulfur": "0.337"
-    },
-    "Ammonium Sulfate": {
-        "Sulfur": "0.243"
-    },
-    "Urea": {
-        "Nitrogen": "0.466"
-    },
-    "Zinc Chloride": {
-        "Zinc": "0.48"
-    },
-    "Zinc Oxide": {
-        "Zinc": "0.803"
-    },
-    "EDTA NH3 Complex": {
-        "Zinc": "0.15"
-    }
+  "Anhydrous Ammonia (82-0-0)": {
+    "Nitrogen": "0.82"
+  },
+  "Ammonium Nitrate": {
+    "Nitrogen": "0.35"
+  },
+  "Ammonium Polyphosphate from 11-37-0": {
+    "Nitrogen": "0.181",
+    "Phosphorous": "0.612"
+  },
+  "Ammonium Polyphosphate from 10-34-0": {
+    "Nitrogen": "0.181",
+    "Phosphorous": "0.612"
+  },
+  "Monoammonium Phosphate": {
+    "Nitrogen": "0.122",
+    "Phosphorous": "0.617"
+  },
+  "Ammonium Thiosulfate": {
+    "Nitrogen": "0.189",
+    "Sulfur": "0.433"
+  },
+  "Ammonium Sulfite": {
+    "Nitrogen": "0.241",
+    "Sulfur": "0.276"
+  },
+  "Ammonium Hydroxide": {
+    "Nitrogen": "0.4"
+  },
+  "Phosphoric Acid": {
+    "Phosphorous": "0.724"
+  },
+  "Potassium Chloride": {
+    "Potassium": "0.632"
+  },
+  "Potassium Thiosulfate": {
+    "Potassium": "0.495",
+    "Sulfur": "0.337"
+  },
+  "Ammonium Sulfate": {
+    "Sulfur": "0.243"
+  },
+  "Urea": {
+    "Nitrogen": "0.466"
+  },
+  "Zinc Chloride": {
+    "Zinc": "0.48"
+  },
+  "Zinc Oxide": {
+    "Zinc": "0.803"
+  },
+  "EDTA NH3 Complex": {
+    "Zinc": "0.15"
+  }
 }

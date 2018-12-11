@@ -1,83 +1,87 @@
 {
-    "32% UAN": {
-        "Urea": ".3525",
-        "Ammonium Nitrate": ".445",
-        "Water": ".2025"
-    },
-    "30% UAN": {
-        "Urea": "0.3305",
-        "Ammonium Nitrate": "0.4172",
-        "Water": "0.2523"
-    },
-    "29% UAN": {
-        "Urea": "0.3195",
-        "Ammonium Nitrate": "0.4033",
-        "Water": "0.2772"
-    },
-    "28% UAN": {
-        "Urea": "0.3084",
-        "Ammonium Nitrate": "0.3894",
-        "Water": "0.3022"
-    },
-    "10-34-00": {
-        "Ammonium Polyphosphate": ".555",
-        "Water": ".445"
-    },
-    "11-37-00": {
-        "Ammonium Polyphophate": "0.61",
-        "Water":  "0.39"
-    },
-    "MAP (11-52-0)": {
-        "Monoammonium Phosphate": "1.00"
-    },
-    "Ortho-Phosphoric Acid": {
-        "Phosphoric Acid": "1.00"
-    },
-    "Potash (0-0-62)": {
-        "Potassium Chloride": "0.981",
-        "Water": "0.19"
-    },
-    "Ammonium Thiosulfate (12-0-0-26)": {
-        "Ammonium Thiosulfate": "0.57",
-        "Ammonium Sulfate": "0.03",
-        "Ammonium Sulfite": "0.025",
-        "Water": "0.395"
-    },
-    "Ammonium Sulfate (21-0-0-24)": {
-        "Ammonium Sulfate": "1.00"
-    },
-    "Potassium Thiosulfate (0-0-25-17S)": {
-        "Potassium Thiosulfate": "0.555",
-        "Water": "0.495"
-    },
-    "Ammoniated Zinc 20%": {
-        "Zinc Chloride": "0.417",
-        "Ammnium Hydroxide": "0.40",
-        "Water": "0.18"
-    },
-    "9% EDTA Zinc Chelate": {
-        "EDTA NH3 Complex": "0.60",
-        "Water": "0.40"
-    },
-    "Zinc Oxide": {
-        "Zinc Oxide": "1.00"
-    },
-    "15-9-9-20S": {
-        "Urea": "0.054",
-        "Ammonium Nitrate": "0.072",
-        "Ammonium Thiosulfate": "0.438",
-        "Ammonium Sulfate": "0.023",
-        "Ammonium Sulfite": "0.019",
-        "Water": "0.409"
-    },
-    "4-11-11": {
-        "Urea": "0.07",
-        "Ammonium Nitrate": "0.09",
-        "Ammonium Polyphosphate (11-37-0)": "0.181",
-        "Potassium Chloride": "0.175",
-        "Water": "0.625"
-    },
-    "Anhydrous Ammonia (82-0-0)": {
-        "Anhydrous Ammnonia": "1.00"
-    }
+  "32% UAN": {
+    "Urea": ".3525",
+    "Ammonium Nitrate": "0.445",
+    "Water": ".2025"
+  },
+  "30% UAN": {
+    "Urea": "0.3305",
+    "Ammonium Nitrate": "0.4172",
+    "Water": "0.2523"
+  },
+  "29% UAN": {
+    "Urea": "0.3195",
+    "Ammonium Nitrate": "0.4033",
+    "Water": "0.2772"
+  },
+  "28% UAN": {
+    "Urea": "0.3084",
+    "Ammonium Nitrate": "0.3894",
+    "Water": "0.3022"
+  },
+  "10-34-0": {
+    "Ammonium Polyphosphate from 10-34-0": ".555",
+    "Water": ".445"
+  },
+  "11-37-0": {
+    "Ammonium Polyphosphate from 11-37-0": "0.61",
+    "Water": "0.39"
+  },
+  "MAP (11-52-0)": {
+    "Monoammonium Phosphate": "1.00"
+  },
+  "Ortho-Phosphoric Acid": {
+    "Phosphoric Acid": "1.00"
+  },
+  "Potash (0-0-62)": {
+    "Potassium Chloride": "0.981",
+    "Water": "0.19"
+  },
+  "Ammonium Thiosulfate (12-0-0-26)": {
+    "Ammonium Thiosulfate": "0.57",
+    "Ammonium Sulfate": "0.03",
+    "Ammonium Sulfite": "0.025",
+    "Water": "0.395"
+  },
+  "Ammonium Sulfate (21-0-0-24)": {
+    "Ammonium Sulfate": "1.00"
+  },
+  "Potassium Thiosulfate (0-0-25-17S)": {
+    "Potassium Thiosulfate": "0.555",
+    "Water": "0.495"
+  },
+  "Ammoniated Zinc 20%": {
+    "Zinc Chloride": "0.417",
+    "Ammnium Hydroxide": "0.40",
+    "Water": "0.18"
+  },
+  "9% EDTA Zinc Chelate": {
+    "EDTA NH3 Complex": "0.60",
+    "Water": "0.40"
+  },
+  "Zinc Oxide": {
+    "Zinc Oxide": "1.00"
+  },
+  "15-0-0-20S": {
+    "Urea": "0.054",
+    "Ammonium Nitrate": "0.072",
+    "Ammonium Thiosulfate": "0.438",
+    "Ammonium Sulfate": "0.023",
+    "Ammonium Sulfite": "0.019",
+    "Water": "0.409"
+  },
+  "4-11-11": {
+    "Urea": "0.0069",
+    "Ammonium Nitrate": "0.0092",
+    "Ammonium Polyphosphate from 11-37-0": "0.1806",
+    "Potassium Chloride": "0.1746",
+    "Sodium Chloride": "0.0034",
+    "Water": "0.6253"
+  },
+  "Anhydrous Ammonia (82-0-0)": {
+    "Anhydrous Ammnonia": "1.00"
+  },
+  "Water": {
+    "Water": "1.00"
+  }
 }
