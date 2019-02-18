@@ -4,6 +4,11 @@
       <h3>Fertilizer Calc</h3>
     </div>
     <div v-for="error in errors" :key="error" class="text-danger">{{error}}</div>
+    <form class="form-inline" v-on:submit.prevent="">
+      <div class="form-group mr-2">
+        NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
+      </div>
+    </form>
     <form class="form-inline" v-on:submit.prevent="onAdd">
       <div class="form-group mr-2" required>
         <label class="sr-only" for="product-input">Product</label>
@@ -21,9 +26,6 @@
       </div>
       <div class="input-group mr-2">
         <button class="btn btn-primary text-white" v-on:click="onAdd">Add</button>
-      </div>
-      <div v-if="density !== 0">
-        density: {{ density.toFixed(2) }} lbs/gal
       </div>
     </form>
 
@@ -44,7 +46,7 @@
                 {{component[0]}}
               </span>
             </td>
-            <td>{{component[1]*100}}%</td>
+            <td>{{(component[1]*100).toFixed(2)}}%</td>
           </tr>
         </tbody>
       </table>
@@ -55,6 +57,7 @@
       <table class="table">
         <thead>
           <th scope="col">Ingredient</th>
+          <th scope="col">CAS Number</th>
           <th scope="col">Percent</th>
         </thead>
         <tbody>
@@ -62,10 +65,12 @@
             <td scope="row">
                 {{ingredient}}
             </td>
+            <td>{{ingredientCasNumbers[ingredient]}}</td>
             <td>{{(percent * 100).toFixed(2)}}%</td>
           </tr>
           <tr>
             <td scope="row"><strong>Total</strong></td>
+            <td scope="row"></td>
             <td scope="row"><strong>{{totalResultPercent.mul(100).toFixed(2)}}%</strong></td>
           </tr>
         </tbody>
@@ -78,14 +83,36 @@
           <th scope="col">Percent</th>
         </thead>
         <tbody>
-          <tr v-for="[nutrient, percent] in Object.entries(concentrations)" :key="nutrient">
-            <td scope="row">
-                {{nutrient}}
-            </td>
-            <td>{{percent.mul(100).toFixed(2)}}%</td>
+          <tr v-if="concentrations['Nitrogen']">
+            <td scope="row">Nitrogen</td>
+            <td scope="row">{{concentrations['Nitrogen'].mul(100).toFixed(2)}}%</td>
           </tr>
+          <tr v-if="concentrations['Phosphorous']">
+            <td scope="row">Phosphorous</td>
+            <td scope="row">{{concentrations['Phosphorous'].mul(100).toFixed(2)}}%</td>
+          </tr>
+          <tr v-if="concentrations['Potassium']">
+            <td scope="row">Potassium</td>
+            <td scope="row">{{concentrations['Potassium'].mul(100).toFixed(2)}}%</td>
+          </tr>
+          <tr v-if="concentrations['Zinc']">
+            <td scope="row">Zinc</td>
+            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
+          </tr>
+          <!-- <tr -->
+          <!--   v-for="[nutrient, percent] in Object.entries(concentrations)" -->
+          <!--   :key="nutrient"> -->
+          <!--   <td scope="row"> -->
+          <!--       {{nutrient}} -->
+          <!--   </td> -->
+          <!--   <td>{{percent.mul(100).toFixed(2)}}%</td> -->
+          <!-- </tr> -->
         </tbody>
       </table>
+
+      <div v-if="density !== 0">
+        Density: {{ density.toFixed(2) }} lbs/gal
+      </div>
     </div>
   </div>
 </template>
@@ -95,6 +122,7 @@ import Big from 'big.js'
 import recipes from '../recipes.json'
 import nutrientConcentrations from '../nutrient-concentrations.json'
 import ingredientDensities from '../ingredient-densities.json'
+import ingredientCasNumbers from '../ingredient-CASNumbers.json'
 
 export default {
   name: 'app',
@@ -102,6 +130,7 @@ export default {
     return {
       recipes: {},
       recipeComponents: [],
+      ingredientCasNumbers: ingredientCasNumbers,
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: {},
@@ -163,7 +192,11 @@ export default {
 
       let density = Big(0);
       for (const [recipe, percent] of this.recipeComponents) {
-        density = density.add(Big(ingredientDensities[recipe]).mul(percent))
+        if (ingredientDensities[recipe]) {
+          density = density.add(Big(ingredientDensities[recipe]).mul(percent))
+        } else {
+          this.errors.push("Couldn't find density for " + recipe)
+        }
       }
       this.density = density
     },

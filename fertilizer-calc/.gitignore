@@ -19,3 +19,9 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw*
+
+
+ingredient-CASNumbers.json
+ingredient-densities.json
+recipes.json
+nutrient-concentrations.json
