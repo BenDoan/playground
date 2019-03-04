@@ -4,6 +4,7 @@
       <h3>Fertilizer Calc</h3>
     </div>
     <div v-for="error in errors" :key="error" class="text-danger">{{error}}</div>
+    <div v-for="message in messages" :key="message" class="text-success">{{message}}</div>
     <form class="form-inline" v-on:submit.prevent="">
       <div class="form-group mr-2">
         NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
@@ -126,6 +127,10 @@
         Density: {{ density.toFixed(2) }} lbs/gal
       </div>
     </div>
+    <hr>
+    <div v-if="allowUpload">
+      Load data file: <input type="file" id="file" ref="file" v-on:change="handleDataUpload()"/>
+    </div>
   </div>
 </template>
 
@@ -133,18 +138,20 @@
 import Big from 'big.js'
 import fertilizerData from '../fertilizer-data.json'
 
-const recipes = fertilizerData['product-recipes']
-const nutrientConcentrations = fertilizerData['nutrient-concentrations']
-const ingredientDensities = fertilizerData['ingredient-densities']
-const ingredientCasNumbers = fertilizerData['ingredient-CASNumbers']
+const initRecipes = fertilizerData['product-recipes']
+const initNutrientConcentrations = fertilizerData['nutrient-concentrations']
+const initIngredientDensities = fertilizerData['ingredient-densities']
+const initIngredientCasNumbers = fertilizerData['ingredient-CASNumbers']
 
 export default {
   name: 'app',
   data: function () {
     return {
-      recipes: {},
       recipeComponents: [],
-      ingredientCasNumbers: ingredientCasNumbers,
+      recipes: this.convertRecipes(initRecipes),
+      nutrientConcentrations: initNutrientConcentrations,
+      ingredientDensities: initIngredientDensities,
+      ingredientCasNumbers: initIngredientCasNumbers,
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: {},
@@ -152,12 +159,23 @@ export default {
       concentrations: {},
       density: 0,
       errors: [],
+      messages: [],
+      uploadedDataString: null,
     }
   },
-  mounted: function () {
-    this.recipes = this.convertRecipes(recipes);
+  computed: {
+    allowUpload: function() {
+      let urlParams = new URLSearchParams(window.location.search);
+      return urlParams.has('upload');
+    }
   },
   methods: {
+    loadData: function(fertilizerData) {
+      this.recipes = this.convertRecipes(fertilizerData['product-recipes'])
+      this.nutrientConcentrations = fertilizerData['nutrient-concentrations']
+      this.ingredientDensities = fertilizerData['ingredient-densities']
+      this.ingredientCasNumbers = fertilizerData['ingredient-CASNumbers']
+    },
     convertRecipes: function(recipes) {
       const newRecipes = {}
       for (const [recipeName, recipe] of Object.entries(recipes)) {
@@ -173,6 +191,24 @@ export default {
         }
       }
       return newRecipes
+    },
+    handleDataUpload: function() {
+      const file = this.$refs.file.files[0];
+
+      const reader = new FileReader()
+      reader.onload = event => {
+        try {
+          this.loadData(JSON.parse(event.target.result));
+          this.messages.push(`Successfuly loaded new data`);
+        } catch (e) {
+          this.errors.push(`Invalid JSON data file: ${e}`);
+        }
+
+      }
+      reader.onerror = error => {
+        this.errors.push(`Error while reading file: ${error}`);
+      }
+      reader.readAsText(file)
     },
     calc: function() {
       const resultPercents = {}
@@ -191,10 +227,10 @@ export default {
 
       const concentrations = {}
       for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
-        if (!(ingredient in nutrientConcentrations)) {
+        if (!(ingredient in this.nutrientConcentrations)) {
           continue
         }
-        for (const [nutrient, nutrientPercent] of Object.entries(nutrientConcentrations[ingredient])) {
+        for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
           const curr = concentrations[nutrient] || Big(0)
           concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
         }
@@ -203,8 +239,8 @@ export default {
 
       let density = Big(0);
       for (const [recipe, percent] of this.recipeComponents) {
-        if (ingredientDensities[recipe]) {
-          density = density.add(Big(ingredientDensities[recipe]).mul(percent))
+        if (this.ingredientDensities[recipe]) {
+          density = density.add(Big(this.ingredientDensities[recipe]).mul(percent))
         } else {
           this.errors.push("Couldn't find density for " + recipe)
         }
@@ -227,6 +263,7 @@ export default {
     },
     clearErrors: function() {
       this.errors = []
+      this.messages = []
     },
   }
 }
