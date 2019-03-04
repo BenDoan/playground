@@ -21,7 +21,4 @@ yarn-error.log*
 *.sw*
 
 
-ingredient-CASNumbers.json
-ingredient-densities.json
-recipes.json
-nutrient-concentrations.json
+fertilizer-data.json

@@ -99,6 +99,18 @@
             <td scope="row">Zinc</td>
             <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
           </tr>
+          <tr v-if="concentrations['Zinc']">
+            <td scope="row">Zinc</td>
+            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
+          </tr>
+          <tr v-if="concentrations['Boron']">
+            <td scope="row">Zinc</td>
+            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
+          </tr>
+          <tr v-if="concentrations['Copper']">
+            <td scope="row">Zinc</td>
+            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
+          </tr>
           <!-- <tr -->
           <!--   v-for="[nutrient, percent] in Object.entries(concentrations)" -->
           <!--   :key="nutrient"> -->
@@ -119,10 +131,12 @@
 
 <script>
 import Big from 'big.js'
-import recipes from '../recipes.json'
-import nutrientConcentrations from '../nutrient-concentrations.json'
-import ingredientDensities from '../ingredient-densities.json'
-import ingredientCasNumbers from '../ingredient-CASNumbers.json'
+import fertilizerData from '../fertilizer-data.json'
+
+const recipes = fertilizerData['product-recipes']
+const nutrientConcentrations = fertilizerData['nutrient-concentrations']
+const ingredientDensities = fertilizerData['ingredient-densities']
+const ingredientCasNumbers = fertilizerData['ingredient-CASNumbers']
 
 export default {
   name: 'app',
@@ -172,15 +186,12 @@ export default {
       if (this.recipeComponents.length > 0) {
         this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
       } else {
-        this.totalResultPercent = Big(0);
+        this.totalResultPercent = Big(0)
       }
 
       const concentrations = {}
       for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
         if (!(ingredient in nutrientConcentrations)) {
-          if (ingredient !== "Water") {
-            this.errors.push("Couldn't find nutrient concentrations for ingredient " + ingredient)
-          }
           continue
         }
         for (const [nutrient, nutrientPercent] of Object.entries(nutrientConcentrations[ingredient])) {
