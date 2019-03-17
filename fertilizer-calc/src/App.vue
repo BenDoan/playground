@@ -93,8 +93,8 @@
         </tbody>
       </table>
 
-      <div v-if="density !== 0">
-        Density: {{ density.toFixed(2) }} lbs/gal
+      <div v-if="densityLowerRange !== 0">
+        Density: {{ densityLowerRange.toFixed(2) }}-{{ densityUpperRange.toFixed(2) }} lbs/gal
       </div>
     </div>
     <hr>
@@ -129,7 +129,8 @@ export default {
       resultPercents: {},
       totalResultPercent: Big(0),
       concentrations: {},
-      density: 0,
+      densityUpperRange: 0,
+      densityLowerRange: 0,
       errors: [],
       messages: [],
       uploadedDataString: null,
@@ -209,15 +210,27 @@ export default {
       }
       this.concentrations = concentrations
 
-      let density = Big(0);
+      let densityLowerRange = Big(0);
+      let densityUpperRange = Big(0);
       for (const [recipe, percent] of this.recipeComponents) {
         if (this.ingredientDensities[recipe]) {
-          density = density.add(Big(this.ingredientDensities[recipe]).mul(percent))
+          let thisDensityLower;
+          let thisDensityUpper;
+          if (this.ingredientDensities[recipe].includes("-")) {
+            const [lower, upper] = this.ingredientDensities[recipe].split("-");
+            thisDensityLower = Big(lower);
+            thisDensityUpper = Big(upper);
+          } else {
+            thisDensityLower = thisDensityUpper = Big(this.ingredientDensities[recipe])
+          }
+          densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
+          densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
         } else {
           this.errors.push("Couldn't find density for " + recipe)
         }
       }
-      this.density = density
+      this.densityUpperRange = densityUpperRange
+      this.densityLowerRange = densityLowerRange
     },
     onAdd: function() {
       if (this.chosenProduct && this.chosenPercent) {
