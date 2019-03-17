@@ -84,42 +84,12 @@
           <th scope="col">Percent</th>
         </thead>
         <tbody>
-          <tr v-if="concentrations['Nitrogen']">
-            <td scope="row">Nitrogen</td>
-            <td scope="row">{{concentrations['Nitrogen'].mul(100).toFixed(2)}}%</td>
+          <tr v-for="nutrient in nutrientOrder" :key="nutrient">
+            <td scope="row" v-if="concentrations[nutrient]">{{nutrient}}</td>
+            <td scope="row" v-if="concentrations[nutrient]">
+              {{concentrations[nutrient].mul(100).toFixed(2)}}%
+            </td>
           </tr>
-          <tr v-if="concentrations['Phosphorous']">
-            <td scope="row">Phosphorous</td>
-            <td scope="row">{{concentrations['Phosphorous'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <tr v-if="concentrations['Potassium']">
-            <td scope="row">Potassium</td>
-            <td scope="row">{{concentrations['Potassium'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <tr v-if="concentrations['Zinc']">
-            <td scope="row">Zinc</td>
-            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <tr v-if="concentrations['Zinc']">
-            <td scope="row">Zinc</td>
-            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <tr v-if="concentrations['Boron']">
-            <td scope="row">Zinc</td>
-            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <tr v-if="concentrations['Copper']">
-            <td scope="row">Zinc</td>
-            <td scope="row">{{concentrations['Zinc'].mul(100).toFixed(2)}}%</td>
-          </tr>
-          <!-- <tr -->
-          <!--   v-for="[nutrient, percent] in Object.entries(concentrations)" -->
-          <!--   :key="nutrient"> -->
-          <!--   <td scope="row"> -->
-          <!--       {{nutrient}} -->
-          <!--   </td> -->
-          <!--   <td>{{percent.mul(100).toFixed(2)}}%</td> -->
-          <!-- </tr> -->
         </tbody>
       </table>
 
@@ -142,6 +112,7 @@ const initRecipes = fertilizerData['product-recipes']
 const initNutrientConcentrations = fertilizerData['nutrient-concentrations']
 const initIngredientDensities = fertilizerData['ingredient-densities']
 const initIngredientCasNumbers = fertilizerData['ingredient-CASNumbers']
+const initNutrientOrder = fertilizerData['nutrient-order']
 
 export default {
   name: 'app',
@@ -152,6 +123,7 @@ export default {
       nutrientConcentrations: initNutrientConcentrations,
       ingredientDensities: initIngredientDensities,
       ingredientCasNumbers: initIngredientCasNumbers,
+      nutrientOrder: initNutrientOrder,
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: {},
