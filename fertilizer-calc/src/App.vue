@@ -101,7 +101,7 @@
         </table>
 
         <div v-if="densityLowerRange !== 0">
-          Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal
+          <strong>Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal</strong>
         </div>
       </div>
       <hr>
@@ -159,6 +159,7 @@ export default {
       this.nutrientConcentrations = fertilizerData['nutrient-concentrations']
       this.ingredientDensities = fertilizerData['ingredient-densities']
       this.ingredientCasNumbers = fertilizerData['ingredient-CASNumbers']
+      this.nutrientOrder = fertilizerData['nutrient-order']
     },
     convertRecipes: function(recipes) {
       const newRecipes = {}
