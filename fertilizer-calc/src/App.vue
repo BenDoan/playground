@@ -94,7 +94,7 @@
       </table>
 
       <div v-if="densityLowerRange !== 0">
-        Density: {{ densityLowerRange.toFixed(2) }}-{{ densityUpperRange.toFixed(2) }} lbs/gal
+        Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal
       </div>
     </div>
     <hr>
@@ -129,8 +129,8 @@ export default {
       resultPercents: {},
       totalResultPercent: Big(0),
       concentrations: {},
-      densityUpperRange: 0,
-      densityLowerRange: 0,
+      densityUpperRange: Big(0),
+      densityLowerRange: Big(0),
       errors: [],
       messages: [],
       uploadedDataString: null,
