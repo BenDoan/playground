@@ -1,11 +1,15 @@
 <template>
   <div>
+    <div class="container">
+      <div class="row">
+        <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
+        <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
+      </div>
+    </div>
     <div class="container" v-if="recipes">
       <div class="row">
         <h3>Fertilizer Calc</h3>
       </div>
-      <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
-      <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
       <form class="form-inline" v-on:submit.prevent="">
         <div class="form-group mr-2">
           NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
@@ -109,6 +113,14 @@
 <script>
 import Big from 'big.js'
 
+function parse(str) {
+  try {
+    return JSON.parse(str)
+  } catch (e) {
+    return JSON.parse(atob(str))
+  }
+}
+
 export default {
   name: 'app',
   data: function () {
@@ -133,7 +145,7 @@ export default {
   },
   created: function () {
     try {
-      this.loadData(JSON.parse(localStorage.data_string));
+      this.loadData(parse(localStorage.data_string));
       this.messages.push(`Loaded data from local storage`);
     } catch (e) {
       1
@@ -168,7 +180,7 @@ export default {
       const reader = new FileReader()
       reader.onload = event => {
         try {
-          this.loadData(JSON.parse(event.target.result));
+          this.loadData(parse(event.target.result));
           this.messages.push(`Loaded data`);
           localStorage.data_string = event.target.result
         } catch (e) {
