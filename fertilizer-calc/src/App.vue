@@ -2,14 +2,16 @@
   <div>
     <div class="container">
       <div class="row">
+        <h3>Fertilizer Calc</h3>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
         <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
         <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
       </div>
     </div>
     <div class="container" v-if="recipes">
-      <div class="row">
-        <h3>Fertilizer Calc</h3>
-      </div>
       <form class="form-inline" v-on:submit.prevent="">
         <div class="form-group mr-2">
           NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
