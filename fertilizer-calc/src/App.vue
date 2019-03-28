@@ -236,10 +236,26 @@ export default {
           let thisDensityUpper;
           if (this.ingredientDensities[recipe].includes("-")) {
             const [lower, upper] = this.ingredientDensities[recipe].split("-");
+
+            if (!this.isValidNum(lower)){
+              this.errors.push(`Invalid density number for ${recipe}: ${lower}`)
+              continue
+            }
+            if (!this.isValidNum(upper)){
+              this.errors.push(`Invalid density number for ${recipe}: ${upper}`)
+              continue
+            }
+
             thisDensityLower = Big(lower);
             thisDensityUpper = Big(upper);
           } else {
-            thisDensityLower = thisDensityUpper = Big(this.ingredientDensities[recipe])
+            const num = this.ingredientDensities[recipe]
+            if (!this.isValidNum(num)) {
+              this.errors.push(`Invalid density number for ${recipe}: ${num}`)
+              continue
+            }
+
+            thisDensityLower = thisDensityUpper = Big(num)
           }
           densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
           densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
@@ -268,6 +284,14 @@ export default {
       this.errors = []
       this.messages = []
     },
+    isValidNum: function(s) {
+      try {
+        Big(s)
+        return true
+      } catch (e) {
+        return false
+      }
+    }
   }
 }
 
