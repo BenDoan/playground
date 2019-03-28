@@ -206,6 +206,10 @@ export default {
       for (const [recipe, percent] of this.recipeComponents) {
         for (const [baseIngredient, baseIngredientPercent] of Object.entries(this.recipes[recipe])) {
           const curr = resultPercents[baseIngredient] || Big(0)
+          if (!this.isValidNum(percent)){
+            this.errors.push(`Invalid recipe percent for ${recipe}: ${percent}`)
+            continue
+          }
           resultPercents[baseIngredient] = curr.add(Big(percent).mul(baseIngredientPercent))
         }
       }
@@ -223,6 +227,10 @@ export default {
         }
         for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
           const curr = concentrations[nutrient] || Big(0)
+          if (!this.isValidNum(nutrientPercent)){
+            this.errors.push(`Invalid nutrient percent for ${ingredient} ${nutrient}: ${nutrientPercent}`)
+            continue
+          }
           concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
         }
       }
