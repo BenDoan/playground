@@ -101,7 +101,12 @@
         </table>
 
         <div v-if="densityLowerRange !== 0">
-          <strong>Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal</strong>
+          <div v-if="densityLowerRange.eq(densityUpperRange)">
+            <strong>Density: {{densityLowerRange.toFixed(2)}} lbs/gal</strong>
+          </div>
+          <div v-else>
+            <strong>Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal</strong>
+          </div>
         </div>
       </div>
       <hr>
