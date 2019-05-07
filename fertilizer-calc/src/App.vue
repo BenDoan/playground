@@ -237,7 +237,7 @@ export default {
       }
       reader.readAsText(file)
     },
-    calc: function() {
+    _calcResultPercents() {
       const resultPercents = {}
       for (const [recipe, percent] of this.recipeComponents) {
         for (const [baseIngredient, baseIngredientPercent] of Object.entries(this.recipes[recipe])) {
@@ -250,71 +250,70 @@ export default {
         }
       }
       this.resultPercents = resultPercents;
+
       if (this.recipeComponents.length > 0) {
-        this.totalResultPercent = Object.values(resultPercents).reduce((sum, x) => sum.add(x))
+        this.totalResultPercent = Object.values(this.resultPercents).reduce((sum, x) => sum.add(x))
       } else {
         this.totalResultPercent = Big(0)
       }
-
-      if (this.nutrientConcentrations) {
-        const concentrations = {}
-        for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
-          if (!(ingredient in this.nutrientConcentrations)) {
+    },
+    _calcNutrientConcentrations() {
+      const concentrations = {}
+      for (const [ingredient, ingredientPercent] of Object.entries(this.resultPercents)) {
+        if (!(ingredient in this.nutrientConcentrations)) {
+          continue
+        }
+        for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
+          const curr = concentrations[nutrient] || Big(0)
+          if (!this.isValidNum(nutrientPercent)){
+            this.errors.push(`Invalid nutrient percent for ${ingredient} ${nutrient}: ${nutrientPercent}`)
             continue
           }
-          for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
-            const curr = concentrations[nutrient] || Big(0)
-            if (!this.isValidNum(nutrientPercent)){
-              this.errors.push(`Invalid nutrient percent for ${ingredient} ${nutrient}: ${nutrientPercent}`)
+          concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
+        }
+      }
+      this.concentrations = concentrations
+    },
+    _calcDensities() {
+      let densityLowerRange = Big(0);
+      let densityUpperRange = Big(0);
+      for (const [recipe, percent] of this.recipeComponents) {
+        if (this.ingredientDensities[recipe]) {
+          let thisDensityLower;
+          let thisDensityUpper;
+          if (this.ingredientDensities[recipe].includes("-")) {
+            const [lower, upper] = this.ingredientDensities[recipe].split("-");
+
+            if (!this.isValidNum(lower)){
+              this.errors.push(`Invalid density number for ${recipe}: ${lower}`)
               continue
             }
-            concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
-          }
-        }
-        this.concentrations = concentrations
-      }
-
-      if (this.ingredientDensities) {
-        let densityLowerRange = Big(0);
-        let densityUpperRange = Big(0);
-        for (const [recipe, percent] of this.recipeComponents) {
-          if (this.ingredientDensities[recipe]) {
-            let thisDensityLower;
-            let thisDensityUpper;
-            if (this.ingredientDensities[recipe].includes("-")) {
-              const [lower, upper] = this.ingredientDensities[recipe].split("-");
-
-              if (!this.isValidNum(lower)){
-                this.errors.push(`Invalid density number for ${recipe}: ${lower}`)
-                continue
-              }
-              if (!this.isValidNum(upper)){
-                this.errors.push(`Invalid density number for ${recipe}: ${upper}`)
-                continue
-              }
-
-              thisDensityLower = Big(lower);
-              thisDensityUpper = Big(upper);
-            } else {
-              const num = this.ingredientDensities[recipe]
-              if (!this.isValidNum(num)) {
-                this.errors.push(`Invalid density number for ${recipe}: ${num}`)
-                continue
-              }
-
-              thisDensityLower = thisDensityUpper = Big(num)
+            if (!this.isValidNum(upper)){
+              this.errors.push(`Invalid density number for ${recipe}: ${upper}`)
+              continue
             }
-            densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
-            densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
-          } else {
-            this.errors.push("Couldn't find density for " + recipe)
-          }
-        }
-        this.densityUpperRange = densityUpperRange
-        this.densityLowerRange = densityLowerRange
-      }
 
-      if (this.ingredientPh) {
+            thisDensityLower = Big(lower);
+            thisDensityUpper = Big(upper);
+          } else {
+            const num = this.ingredientDensities[recipe]
+            if (!this.isValidNum(num)) {
+              this.errors.push(`Invalid density number for ${recipe}: ${num}`)
+              continue
+            }
+
+            thisDensityLower = thisDensityUpper = Big(num)
+          }
+          densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
+          densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
+        } else {
+          this.errors.push("Couldn't find density for " + recipe)
+        }
+      }
+      this.densityUpperRange = densityUpperRange
+      this.densityLowerRange = densityLowerRange
+    },
+    _calcPh() {
         let phLowerRange = Big(0);
         let phUpperRange = Big(0);
         for (const [recipe, percent] of this.recipeComponents) {
@@ -352,6 +351,20 @@ export default {
         }
         this.phUpperRange = Big(-Math.log10(parseFloat(phUpperRange)))
         this.phLowerRange = Big(-Math.log10(parseFloat(phLowerRange)))
+    },
+    calc: function() {
+      this._calcResultPercents()
+
+      if (this.nutrientConcentrations) {
+        this._calcNutrientConcentrations()
+      }
+
+      if (this.ingredientDensities) {
+        this._calcDensities()
+      }
+
+      if (this.ingredientPh) {
+        this._calcPh()
       }
     },
     onAdd: function() {
