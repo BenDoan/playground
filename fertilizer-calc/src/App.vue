@@ -6,18 +6,16 @@
       </div>
     </div>
     <div class="container">
-      <div class="row">
-        <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
-        <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
-      </div>
+      <div v-for="(error, i) in errors" :key="i" class="text-danger row">{{error}}</div>
+      <div v-for="(message, i) in messages" :key="i" class="text-success row">{{message}}</div>
     </div>
     <div class="container" v-if="recipes">
-      <form class="form-inline" v-on:submit.prevent="">
+      <form class="form-inline row" v-on:submit.prevent="">
         <div class="form-group mr-2">
           NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
         </div>
       </form>
-      <form class="form-inline" v-on:submit.prevent="onAdd">
+      <form class="form-inline row" v-on:submit.prevent="onAdd">
         <div class="form-group mr-2" required>
           <label class="sr-only" for="product-input">Product</label>
           <select v-model="chosenProduct" class="form-control" id="product-input">
@@ -60,7 +58,7 @@
         </table>
       </div>
 
-      <div class="row" v-if="Object.keys(resultPercents).length > 0">
+      <div class="row" v-if="hasData">
         <h3>Result</h3>
         <table class="table">
           <thead>
@@ -83,7 +81,9 @@
             </tr>
           </tbody>
         </table>
+      </div>
 
+      <div class="row" v-if="hasData">
         <h3>Nutrient Concentrations</h3>
         <table class="table">
           <thead>
@@ -99,15 +99,39 @@
             </tr>
           </tbody>
         </table>
+      </div>
 
-        <div v-if="densityLowerRange !== 0">
-          <div v-if="densityLowerRange.eq(densityUpperRange)">
-            <strong>Density: {{densityLowerRange.toFixed(2)}} lbs/gal</strong>
-          </div>
-          <div v-else>
-            <strong>Density: {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal</strong>
-          </div>
+      <div v-if="hasData && densityLowerRange != 0" class="row">
+        <div v-if="densityLowerRange.eq(densityUpperRange)">
+          <strong>Density:</strong> {{densityLowerRange.toFixed(2)}} lbs/gal
         </div>
+        <div v-else>
+          <strong>Density:</strong> {{densityLowerRange.toFixed(2)}}-{{densityUpperRange.toFixed(2)}} lbs/gal
+        </div>
+      </div>
+
+      <div v-if="hasData && phLowerRange != 0" class="row">
+        <div v-if="phLowerRange.eq(phUpperRange)">
+          <strong>pH:</strong> {{phLowerRange.toFixed(2)}}
+        </div>
+        <div v-else>
+          <strong>pH:</strong> {{phLowerRange.toFixed(2)}}-{{phUpperRange.toFixed(2)}}
+        </div>
+      </div>
+
+      <div class="row" v-if="hasData && phLowerRange != 0">
+        <h4>Note: pH calculation assumes:</h4>
+      </div>
+      <div class="row" v-if="hasData && phLowerRange != 0">
+        <p class="card card-body bg-light">
+          <ol>
+            <li>Fertilizer products used to make the blends are both weak acids</li>
+            <li>Concentration of protons is equal to concentration of the acid</li>
+            <li>Components are simple liquids which are not buffered</li>
+            <li>Ionization constants are equal</li>
+            <li>There is no neutralization reaction or formation of a salt</li>
+          </ol>
+        </p>
       </div>
       <hr>
     </div>
@@ -138,6 +162,8 @@ export default {
       ingredientDensities: null,
       ingredientCasNumbers: null,
       nutrientOrder: null,
+      ingredientPh: null,
+
       chosenProduct: null,
       chosenPercent: null,
       resultPercents: {},
@@ -145,6 +171,8 @@ export default {
       concentrations: {},
       densityUpperRange: Big(0),
       densityLowerRange: Big(0),
+      phUpperRange: Big(0),
+      phLowerRange: Big(0),
       errors: [],
       messages: [],
       uploadedDataString: null,
@@ -158,6 +186,11 @@ export default {
       1
     }
   },
+  computed: {
+    hasData() {
+      return Object.keys(this.resultPercents).length > 0
+    }
+  },
   methods: {
     loadData: function(fertilizerData) {
       this.recipes = this.convertRecipes(fertilizerData['product-recipes'])
@@ -165,6 +198,7 @@ export default {
       this.ingredientDensities = fertilizerData['ingredient-densities']
       this.ingredientCasNumbers = fertilizerData['ingredient-CASNumbers']
       this.nutrientOrder = fertilizerData['nutrient-order']
+      this.ingredientPh = fertilizerData['ingredient-ph']
     },
     convertRecipes: function(recipes) {
       const newRecipes = {}
@@ -189,8 +223,10 @@ export default {
       reader.onload = event => {
         try {
           this.loadData(parse(event.target.result));
-          this.messages.push(`Loaded data`);
           localStorage.data_string = event.target.result
+          this.messages.push("Loaded data");
+          // eslint-disable-next-line
+          console.log("Loaded new data");
         } catch (e) {
           this.errors.push(`Invalid JSON data file: ${e}`);
         }
@@ -220,59 +256,103 @@ export default {
         this.totalResultPercent = Big(0)
       }
 
-      const concentrations = {}
-      for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
-        if (!(ingredient in this.nutrientConcentrations)) {
-          continue
-        }
-        for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
-          const curr = concentrations[nutrient] || Big(0)
-          if (!this.isValidNum(nutrientPercent)){
-            this.errors.push(`Invalid nutrient percent for ${ingredient} ${nutrient}: ${nutrientPercent}`)
+      if (this.nutrientConcentrations) {
+        const concentrations = {}
+        for (const [ingredient, ingredientPercent] of Object.entries(resultPercents)) {
+          if (!(ingredient in this.nutrientConcentrations)) {
             continue
           }
-          concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
-        }
-      }
-      this.concentrations = concentrations
-
-      let densityLowerRange = Big(0);
-      let densityUpperRange = Big(0);
-      for (const [recipe, percent] of this.recipeComponents) {
-        if (this.ingredientDensities[recipe]) {
-          let thisDensityLower;
-          let thisDensityUpper;
-          if (this.ingredientDensities[recipe].includes("-")) {
-            const [lower, upper] = this.ingredientDensities[recipe].split("-");
-
-            if (!this.isValidNum(lower)){
-              this.errors.push(`Invalid density number for ${recipe}: ${lower}`)
+          for (const [nutrient, nutrientPercent] of Object.entries(this.nutrientConcentrations[ingredient])) {
+            const curr = concentrations[nutrient] || Big(0)
+            if (!this.isValidNum(nutrientPercent)){
+              this.errors.push(`Invalid nutrient percent for ${ingredient} ${nutrient}: ${nutrientPercent}`)
               continue
             }
-            if (!this.isValidNum(upper)){
-              this.errors.push(`Invalid density number for ${recipe}: ${upper}`)
-              continue
-            }
-
-            thisDensityLower = Big(lower);
-            thisDensityUpper = Big(upper);
-          } else {
-            const num = this.ingredientDensities[recipe]
-            if (!this.isValidNum(num)) {
-              this.errors.push(`Invalid density number for ${recipe}: ${num}`)
-              continue
-            }
-
-            thisDensityLower = thisDensityUpper = Big(num)
+            concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
           }
-          densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
-          densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
-        } else {
-          this.errors.push("Couldn't find density for " + recipe)
         }
+        this.concentrations = concentrations
       }
-      this.densityUpperRange = densityUpperRange
-      this.densityLowerRange = densityLowerRange
+
+      if (this.ingredientDensities) {
+        let densityLowerRange = Big(0);
+        let densityUpperRange = Big(0);
+        for (const [recipe, percent] of this.recipeComponents) {
+          if (this.ingredientDensities[recipe]) {
+            let thisDensityLower;
+            let thisDensityUpper;
+            if (this.ingredientDensities[recipe].includes("-")) {
+              const [lower, upper] = this.ingredientDensities[recipe].split("-");
+
+              if (!this.isValidNum(lower)){
+                this.errors.push(`Invalid density number for ${recipe}: ${lower}`)
+                continue
+              }
+              if (!this.isValidNum(upper)){
+                this.errors.push(`Invalid density number for ${recipe}: ${upper}`)
+                continue
+              }
+
+              thisDensityLower = Big(lower);
+              thisDensityUpper = Big(upper);
+            } else {
+              const num = this.ingredientDensities[recipe]
+              if (!this.isValidNum(num)) {
+                this.errors.push(`Invalid density number for ${recipe}: ${num}`)
+                continue
+              }
+
+              thisDensityLower = thisDensityUpper = Big(num)
+            }
+            densityLowerRange = densityLowerRange.add(thisDensityLower.mul(percent))
+            densityUpperRange = densityUpperRange.add(thisDensityUpper.mul(percent))
+          } else {
+            this.errors.push("Couldn't find density for " + recipe)
+          }
+        }
+        this.densityUpperRange = densityUpperRange
+        this.densityLowerRange = densityLowerRange
+      }
+
+      if (this.ingredientPh) {
+        let phLowerRange = Big(0);
+        let phUpperRange = Big(0);
+        for (const [recipe, percent] of this.recipeComponents) {
+          if (this.ingredientPh[recipe]) {
+            let thisPhLower;
+            let thisPhUpper;
+            if (this.ingredientPh[recipe].includes("-")) {
+              const [lower, upper] = this.ingredientPh[recipe].split("-");
+
+              if (!this.isValidNum(lower)){
+                this.errors.push(`Invalid PH number for ${recipe}: ${lower}`)
+                continue
+              }
+              if (!this.isValidNum(upper)){
+                this.errors.push(`Invalid PH number for ${recipe}: ${upper}`)
+                continue
+              }
+
+              thisPhLower = Big(lower);
+              thisPhUpper = Big(upper);
+            } else {
+              const num = this.ingredientPh[recipe]
+              if (!this.isValidNum(num)) {
+                this.errors.push(`Invalid PH number for ${recipe}: ${num}`)
+                continue
+              }
+
+              thisPhLower = thisPhUpper = Big(num)
+            }
+            phLowerRange = phLowerRange.add(Big(percent).mul(Math.pow(10, -thisPhLower)))
+            phUpperRange = phUpperRange.add(Big(percent).mul(Math.pow(10, -thisPhUpper)))
+          } else {
+            this.errors.push("Couldn't find PH for " + recipe)
+          }
+        }
+        this.phUpperRange = Big(-Math.log10(parseFloat(phUpperRange)))
+        this.phLowerRange = Big(-Math.log10(parseFloat(phLowerRange)))
+      }
     },
     onAdd: function() {
       if (this.chosenProduct && this.chosenPercent) {
