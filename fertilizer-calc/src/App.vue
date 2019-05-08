@@ -110,7 +110,7 @@
         </div>
       </div>
 
-      <div v-if="hasData && phLowerRange != 0" class="row">
+      <div v-if="showPh" class="row">
         <div v-if="phLowerRange.eq(phUpperRange)">
           <strong>pH:</strong> {{phLowerRange.toFixed(2)}}
         </div>
@@ -119,10 +119,10 @@
         </div>
       </div>
 
-      <div class="row" v-if="hasData && phLowerRange != 0">
+      <div class="row" v-if="showPh">
         <h4>Note: pH calculation assumes:</h4>
       </div>
-      <div class="row" v-if="hasData && phLowerRange != 0">
+      <div class="row" v-if="showPh">
         <p class="card card-body bg-light">
           <ol>
             <li>Fertilizer products used to make the blends are both weak acids</li>
@@ -136,7 +136,9 @@
       <hr>
     </div>
     <div class="container">
+      <div class="row">
         Load data: <input type="file" id="file" ref="file" v-on:change="handleDataUpload()"/>
+      </div>
     </div>
   </div>
 </template>
@@ -173,6 +175,7 @@ export default {
       densityLowerRange: Big(0),
       phUpperRange: Big(0),
       phLowerRange: Big(0),
+      phMissing: false,
       errors: [],
       messages: [],
       uploadedDataString: null,
@@ -189,7 +192,12 @@ export default {
   computed: {
     hasData() {
       return Object.keys(this.resultPercents).length > 0
-    }
+    },
+    showPh() {
+      const percentAwayFrom100 = Math.abs((parseFloat(this.totalResultPercent) * 100) - 100)
+      const isRoughly100Percent = percentAwayFrom100 <= 5
+      return this.hasData && this.phLowerRange != 0 && !this.phMissing && isRoughly100Percent
+    },
   },
   methods: {
     loadData: function(fertilizerData) {
@@ -324,12 +332,14 @@ export default {
               const [lower, upper] = this.ingredientPh[recipe].split("-");
 
               if (!this.isValidNum(lower)){
-                this.errors.push(`Invalid PH number for ${recipe}: ${lower}`)
-                continue
+                this.errors.push(`Invalid pH value for ${recipe}: ${lower}, remove this product to see pH calculation`)
+                this.phMissing = true
+                return
               }
               if (!this.isValidNum(upper)){
-                this.errors.push(`Invalid PH number for ${recipe}: ${upper}`)
-                continue
+                this.errors.push(`Invalid pH value for ${recipe}: ${upper}, remove this product to see pH calculation`)
+                this.phMissing = true
+                return
               }
 
               thisPhLower = Big(lower);
@@ -337,8 +347,9 @@ export default {
             } else {
               const num = this.ingredientPh[recipe]
               if (!this.isValidNum(num)) {
-                this.errors.push(`Invalid PH number for ${recipe}: ${num}`)
-                continue
+                this.errors.push(`Invalid pH number for ${recipe}: ${num}, remove this product to see pH calculation`)
+                this.phMissing = true
+                return
               }
 
               thisPhLower = thisPhUpper = Big(num)
@@ -346,11 +357,15 @@ export default {
             phLowerRange = phLowerRange.add(Big(percent).mul(Math.pow(10, -thisPhLower)))
             phUpperRange = phUpperRange.add(Big(percent).mul(Math.pow(10, -thisPhUpper)))
           } else {
-            this.errors.push("Couldn't find PH for " + recipe)
+            this.phMissing = true
+            this.errors.push(`Couldn't find pH for ${recipe}, remove this product to see pH calculation`)
+            return
           }
         }
-        this.phUpperRange = Big(-Math.log10(parseFloat(phUpperRange)))
-        this.phLowerRange = Big(-Math.log10(parseFloat(phLowerRange)))
+        if (!phUpperRange.eq(0) && !phLowerRange.eq(0)) {
+          this.phUpperRange = Big(-Math.log10(parseFloat(phUpperRange)))
+          this.phLowerRange = Big(-Math.log10(parseFloat(phLowerRange)))
+        }
     },
     calc: function() {
       this._calcResultPercents()
@@ -374,6 +389,7 @@ export default {
         this.calc()
         this.chosenProduct = null;
         this.chosenPercent = null;
+        this.phMissing = false;
       }
     },
     onDelete: function(index) {
