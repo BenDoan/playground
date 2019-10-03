@@ -358,7 +358,7 @@ export default {
             phUpperRange = phUpperRange.add(Big(percent).mul(Math.pow(10, -thisPhUpper)))
           } else {
             this.phMissing = true
-            this.errors.push(`Couldn't find pH for ${recipe}, remove this product to see pH calculation`)
+            this.errors.push("pH cannot be calculated")
             return
           }
         }
