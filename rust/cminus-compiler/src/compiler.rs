@@ -1,8 +1,8 @@
-use ast::{Meta, Program, Stmt, Expr, Operator, Parameter};
+use ast::{Expr, Meta, Operator, Parameter, Program, Stmt};
 use std::collections::HashMap;
-use util::get_pos;
 use std::error::Error;
 use std::fmt;
+use util::get_pos;
 
 const OFFSET: usize = 6010000;
 const CURRENT_FUNCTION_CALL: &str = "CURRENTFUNCTION";
@@ -91,9 +91,7 @@ impl Compiler {
             }
         }
 
-        Ok(
-            [symbol_table_comments.as_slice(), self.stmts.as_slice()].concat(),
-        )
+        Ok([symbol_table_comments.as_slice(), self.stmts.as_slice()].concat())
     }
 
     fn compile_stmt(&mut self, stmt: &Meta<Stmt>) -> Result<(), CompilationError> {
@@ -115,11 +113,7 @@ impl Compiler {
                     if let Some(table_for_scope) = self.symbol_tables.last_mut() {
                         table_for_scope.insert(
                             parameter.identifier.clone(),
-                            SymbolEntry::new(
-                                &mut self.count,
-                                None,
-                                Some(vec![parameter.clone()]),
-                            ),
+                            SymbolEntry::new(&mut self.count, None, Some(vec![parameter.clone()])),
                         );
                     }
                 }
@@ -168,9 +162,8 @@ impl Compiler {
                 if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
                     self.stmts.push(format!("mov r0, #0")); // configure for stdin
                     self.stmts.push(format!("swi 0x6c")); // read val to r0
-                    self.stmts.push(
-                        format!("str r0, ={}", OFFSET + var.mem_loc),
-                    );
+                    self.stmts
+                        .push(format!("str r0, ={}", OFFSET + var.mem_loc));
                 } else {
                     let pos = get_pos(&self.source_code, stmt.byte_offset);
                     return Err(CompilationError::new(format!(
@@ -224,9 +217,8 @@ impl Compiler {
                         let return_loc = param_locs.get(0).unwrap();
                         let return_val_loc = param_locs.get(1).unwrap();
                         self.stmts.push(format!("ldr r0, ={}", OFFSET + expr_val));
-                        self.stmts.push(
-                            format!("str r0, ={}", OFFSET + return_val_loc),
-                        );
+                        self.stmts
+                            .push(format!("str r0, ={}", OFFSET + return_val_loc));
                         self.stmts.push(format!("ldr r0, ={}", OFFSET + return_loc));
                         self.stmts.push(format!("mov pc, r0"));
                     }
@@ -262,9 +254,8 @@ impl Compiler {
                         self.stmts.push(format!("{}:", label1));
                         self.stmts.push(format!("mov r3, #0"));
                         self.stmts.push(format!("{}:", label2));
-                        self.stmts.push(
-                            format!("str r3, ={}", OFFSET + curr_mem_loc),
-                        );
+                        self.stmts
+                            .push(format!("str r3, ={}", OFFSET + curr_mem_loc));
                     }
                     Operator::LogicalOr => {
                         let label1 = format!(".Or1{}", curr_mem_loc);
@@ -289,12 +280,15 @@ impl Compiler {
                         self.stmts.push(format!("mov r3, #0"));
 
                         self.stmts.push(format!("{}:", label3));
-                        self.stmts.push(
-                            format!("str r3, ={}", OFFSET + curr_mem_loc),
-                        );
+                        self.stmts
+                            .push(format!("str r3, ={}", OFFSET + curr_mem_loc));
                     }
-                    Operator::Greater | Operator::GreaterEqual | Operator::Less |
-                    Operator::LessEqual | Operator::Equal | Operator::NotEqual => {
+                    Operator::Greater
+                    | Operator::GreaterEqual
+                    | Operator::Less
+                    | Operator::LessEqual
+                    | Operator::Equal
+                    | Operator::NotEqual => {
                         let e1_loc = self.compile_expr(&*e1)?;
                         let e2_loc = self.compile_expr(&*e2)?;
                         self.stmts.push(format!("mov r1, #0"));
@@ -311,9 +305,8 @@ impl Compiler {
                             _ => "",
                         };
                         self.stmts.push(format!("{} r1, #1", instruction));
-                        self.stmts.push(
-                            format!("str r1, ={}", OFFSET + curr_mem_loc),
-                        );
+                        self.stmts
+                            .push(format!("str r1, ={}", OFFSET + curr_mem_loc));
                     }
                     Operator::Divide | Operator::Mod => {
                         let label_start = format!(".start{}", curr_mem_loc);
@@ -339,15 +332,12 @@ impl Compiler {
                         // r1 = remainder
 
                         if let Operator::Divide = op {
-                            self.stmts.push(
-                                format!("str r3, ={}", OFFSET + curr_mem_loc),
-                            );
+                            self.stmts
+                                .push(format!("str r3, ={}", OFFSET + curr_mem_loc));
                         } else {
-                            self.stmts.push(
-                                format!("str r1, ={}", OFFSET + curr_mem_loc),
-                            );
+                            self.stmts
+                                .push(format!("str r1, ={}", OFFSET + curr_mem_loc));
                         }
-
                     }
                     _ => {
                         let e1_val = self.compile_expr(&*e1)?;
@@ -363,110 +353,95 @@ impl Compiler {
                         };
                         self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + e2_val));
-                        self.stmts.push(format!(
-                            "{} r4, r2, r3",
-                            instruction_name,
-                        ));
-                        self.stmts.push(
-                            format!("str r4, ={}", OFFSET + curr_mem_loc),
-                        );
+                        self.stmts.push(format!("{} r4, r2, r3", instruction_name,));
+                        self.stmts
+                            .push(format!("str r4, ={}", OFFSET + curr_mem_loc));
                     }
                 };
             }
-            Expr::Unary(ref op, ref e1) => {
-                match op {
-                    Operator::PreIncr | Operator::PreDecr => {
-                        if let Expr::Identifier(ref name) = e1.inside {
-                            if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
-                                self.stmts.push(
-                                    format!("ldr r2, ={}", OFFSET + var.mem_loc),
-                                );
+            Expr::Unary(ref op, ref e1) => match op {
+                Operator::PreIncr | Operator::PreDecr => {
+                    if let Expr::Identifier(ref name) = e1.inside {
+                        if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
+                            self.stmts
+                                .push(format!("ldr r2, ={}", OFFSET + var.mem_loc));
 
-                                if let Operator::PreIncr = op {
-                                    self.stmts.push(format!("add r2, r2, #1"));
-                                } else if let Operator::PreDecr = op {
-                                    self.stmts.push(format!("sub r2, r2, #1"));
-                                }
-                                self.stmts.push(
-                                    format!("str r2, ={}", OFFSET + var.mem_loc),
-                                );
-
-                                return_mem = var.mem_loc;
-                            } else {
-                                let pos = get_pos(&self.source_code, expr.byte_offset);
-                                return Err(CompilationError::new(format!(
-                                    "Variable not found at line {}",
-                                    pos.0,
-                                )));
+                            if let Operator::PreIncr = op {
+                                self.stmts.push(format!("add r2, r2, #1"));
+                            } else if let Operator::PreDecr = op {
+                                self.stmts.push(format!("sub r2, r2, #1"));
                             }
+                            self.stmts
+                                .push(format!("str r2, ={}", OFFSET + var.mem_loc));
+
+                            return_mem = var.mem_loc;
                         } else {
-                            let line = get_pos(&self.source_code, expr.byte_offset).0;
+                            let pos = get_pos(&self.source_code, expr.byte_offset);
                             return Err(CompilationError::new(format!(
-                                "{:?} can only be used on a variable, error at line {}",
-                                op,
-                                line
+                                "Variable not found at line {}",
+                                pos.0,
                             )));
                         }
+                    } else {
+                        let line = get_pos(&self.source_code, expr.byte_offset).0;
+                        return Err(CompilationError::new(format!(
+                            "{:?} can only be used on a variable, error at line {}",
+                            op, line
+                        )));
                     }
-                    Operator::PostIncr | Operator::PostDecr => {
-                        if let Expr::Identifier(ref name) = e1.inside {
-                            if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
-                                self.stmts.push(
-                                    format!("ldr r2, ={}", OFFSET + var.mem_loc),
-                                );
-                                self.stmts.push(
-                                    format!("str r2, ={}", OFFSET + curr_mem_loc),
-                                );
-                                if let Operator::PostIncr = op {
-                                    self.stmts.push(format!("add r2, r2, #1"));
-                                } else if let Operator::PostDecr = op {
-                                    self.stmts.push(format!("sub r2, r2, #1"));
-                                }
-                                self.stmts.push(
-                                    format!("str r2, ={}", OFFSET + var.mem_loc),
-                                );
-                                return_mem = curr_mem_loc;
-                            } else {
-                                let pos = get_pos(&self.source_code, expr.byte_offset);
-                                return Err(CompilationError::new(format!(
-                                    "Variable not found at line {}",
-                                    pos.0,
-                                )));
-                            }
-                        } else {
-                            let line = get_pos(&self.source_code, expr.byte_offset).0;
-                            return Err(CompilationError::new(format!(
-                                "{:?} can only be used on a variable, error at line {}",
-                                op,
-                                line
-                            )));
-                        }
-                    }
-                    Operator::Negate => {
-                        let e1_val = self.compile_expr(&*e1)?;
-                        self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
-                        self.stmts.push(format!("rsb r2, r2, #0"));
-                        self.stmts.push(
-                            format!("str r2, ={}", OFFSET + curr_mem_loc),
-                        );
-                    }
-                    Operator::Positive => {
-                        let e1_val = self.compile_expr(&*e1)?;
-                        return_mem = e1_val;
-                    }
-                    Operator::Not => {
-                        let e1_val = self.compile_expr(&*e1)?;
-                        self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
-                        self.stmts.push(format!("cmp r2, #0"));
-                        self.stmts.push(format!("moveq r3, #1"));
-                        self.stmts.push(format!("movne r3, #0"));
-                        self.stmts.push(
-                            format!("str r3, ={}", OFFSET + curr_mem_loc),
-                        );
-                    }
-                    _ => (),
                 }
-            }
+                Operator::PostIncr | Operator::PostDecr => {
+                    if let Expr::Identifier(ref name) = e1.inside {
+                        if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
+                            self.stmts
+                                .push(format!("ldr r2, ={}", OFFSET + var.mem_loc));
+                            self.stmts
+                                .push(format!("str r2, ={}", OFFSET + curr_mem_loc));
+                            if let Operator::PostIncr = op {
+                                self.stmts.push(format!("add r2, r2, #1"));
+                            } else if let Operator::PostDecr = op {
+                                self.stmts.push(format!("sub r2, r2, #1"));
+                            }
+                            self.stmts
+                                .push(format!("str r2, ={}", OFFSET + var.mem_loc));
+                            return_mem = curr_mem_loc;
+                        } else {
+                            let pos = get_pos(&self.source_code, expr.byte_offset);
+                            return Err(CompilationError::new(format!(
+                                "Variable not found at line {}",
+                                pos.0,
+                            )));
+                        }
+                    } else {
+                        let line = get_pos(&self.source_code, expr.byte_offset).0;
+                        return Err(CompilationError::new(format!(
+                            "{:?} can only be used on a variable, error at line {}",
+                            op, line
+                        )));
+                    }
+                }
+                Operator::Negate => {
+                    let e1_val = self.compile_expr(&*e1)?;
+                    self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
+                    self.stmts.push(format!("rsb r2, r2, #0"));
+                    self.stmts
+                        .push(format!("str r2, ={}", OFFSET + curr_mem_loc));
+                }
+                Operator::Positive => {
+                    let e1_val = self.compile_expr(&*e1)?;
+                    return_mem = e1_val;
+                }
+                Operator::Not => {
+                    let e1_val = self.compile_expr(&*e1)?;
+                    self.stmts.push(format!("ldr r2, ={}", OFFSET + e1_val));
+                    self.stmts.push(format!("cmp r2, #0"));
+                    self.stmts.push(format!("moveq r3, #1"));
+                    self.stmts.push(format!("movne r3, #0"));
+                    self.stmts
+                        .push(format!("str r3, ={}", OFFSET + curr_mem_loc));
+                }
+                _ => (),
+            },
             Expr::FunctionCall(ref name, ref args) => {
                 self.count += 4;
                 let return_val_loc = self.count;
@@ -510,16 +485,14 @@ impl Compiler {
                 if let Expr::Identifier(ref name) = lhs.inside {
                     if let Some(var) = get_var(name.to_string(), &self.symbol_tables) {
                         self.stmts.push(format!("ldr r3, ={}", OFFSET + rhs_val));
-                        self.stmts.push(
-                            format!("str r3, ={}", OFFSET + var.mem_loc),
-                        );
+                        self.stmts
+                            .push(format!("str r3, ={}", OFFSET + var.mem_loc));
                         return_mem = var.mem_loc;
                     } else {
                         let pos = get_pos(&self.source_code, expr.byte_offset);
                         return Err(CompilationError::new(format!(
                             "Assigning to undeclared variable {} at line: {}",
-                            name,
-                            pos.0,
+                            name, pos.0,
                         )));
                     }
                 } else {
@@ -537,19 +510,16 @@ impl Compiler {
                     let pos = get_pos(&self.source_code, expr.byte_offset);
                     return Err(CompilationError::new(format!(
                         "Using undeclared variable {} at line {}",
-                        name,
-                        pos.0,
+                        name, pos.0,
                     )));
                 }
             }
             Expr::Number(num) => {
-                self.stmts.push(
-                    format!(".equ const{}, {}", curr_mem_loc, num),
-                );
+                self.stmts
+                    .push(format!(".equ const{}, {}", curr_mem_loc, num));
                 self.stmts.push(format!("ldr r3, =const{}", curr_mem_loc));
-                self.stmts.push(
-                    format!("str r3, ={}", OFFSET + curr_mem_loc),
-                );
+                self.stmts
+                    .push(format!("str r3, ={}", OFFSET + curr_mem_loc));
             }
             _ => (),
         };
@@ -557,7 +527,6 @@ impl Compiler {
         Ok(return_mem)
     }
 }
-
 
 fn get_var<'a>(var_name: String, symbol_tables: &'a SymbolTables) -> Option<&'a SymbolEntry> {
     for table in symbol_tables.iter().rev() {

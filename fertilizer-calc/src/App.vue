@@ -12,7 +12,7 @@
     <div class="container" v-if="recipes">
       <form class="form-inline row" v-on:submit.prevent="">
         <div class="form-group mr-2">
-          NPK Analysis: <input type="text" class="form-control ml-2 mb-2">
+          NPK Analysis: <input type="text" class="form-control npk-analysis ml-2 mb-2">
         </div>
       </form>
       <form class="form-inline row" v-on:submit.prevent="onAdd">
@@ -414,5 +414,8 @@ export default {
 
 </script>
 
-<style>
+<style scoped>
+.npk-analysis.npk-analysis {
+  width: 350px;
+}
 </style>
