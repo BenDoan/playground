@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -9,6 +10,7 @@ import json
 import os.path
 import pickle
 import re
+import traceback
 
 HAVE_READ_FILE = 'have-processed.json'
 
@@ -19,7 +21,8 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SPREADSHEET_ID = '1h-GBpn__5CG-jlG1LuQbooNaOm_rLQmBmz6OS1GdaeM'
 RANGE_NAME = 'Transactions!A1:B'
 
-def main():
+def main(dry_run, proc_all):
+    print(dry_run, proc_all)
     config = configparser.ConfigParser()
     config.read('imap-creds.ini');
 
@@ -29,7 +32,8 @@ def main():
 
     have_processed = {}
     try:
-        have_processed = json.load(open(HAVE_READ_FILE))
+        if not proc_all:
+            have_processed = json.load(open(HAVE_READ_FILE))
     except:
         pass
 
@@ -42,16 +46,26 @@ def main():
         for mid in message_ids_from_chase:
             d_mid = mid.decode("utf-8")
             if d_mid not in have_processed:
-                message = M.fetch(d_mid, '(BODY.PEEK[TEXT])')[1][0][1]
-                amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.]*) at (.*) has .* authorized on (.*) at", message.decode("UTF-8"))[0]
-                entries.append([vendor, amount])
-                have_processed[d_mid] = True
-                print(d_mid, amount, vendor, datestr)
+                try:
+                    message = M.fetch(d_mid, '(BODY.PEEK[TEXT])')[1][0][1]
+                    decoded_message = message.decode("UTF-8")
+                    scrubbed_message = decoded_message.replace("=", "").replace("\n", "").lower()
+                    if "credit card statement is ready" in scrubbed_message:
+                        continue
+                    amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.]*) at (.*) has .* authorized on (.*) at", decoded_message)[0]
+                    entries.append([vendor, amount])
+                    have_processed[d_mid] = True
+                    print(d_mid, amount, vendor, datestr)
+                except Exception as e:
+                    print("Couldn't process: {}".format(decoded_message))
+                    traceback.print_exc()
 
-        add_to_spreadsheet(entries)
+        if not dry_run:
+            add_to_spreadsheet(entries)
 
-    with open(HAVE_READ_FILE, "w+") as f:
-        json.dump(have_processed, f)
+    if not dry_run:
+        with open(HAVE_READ_FILE, "w+") as f:
+            json.dump(have_processed, f)
 
 def add_to_spreadsheet(entries):
     creds = None
@@ -87,4 +101,9 @@ def add_to_spreadsheet(entries):
     ).execute()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dry-run", action="store_true")
+    parser.add_argument("-a", "--all", action="store_true")
+    args = parser.parse_args()
+
+    main(dry_run=args.dry_run, proc_all=args.all)
