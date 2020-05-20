@@ -3,4 +3,4 @@
 scriptdir=`dirname "$BASH_SOURCE"`
 
 cd $scriptdir/..
-scp -r email-transaction-to-budget flainted.com:~/code
+rsync -a --delete --progress --exclude env email-transaction-to-budget flainted.com:~/code
