@@ -25,6 +25,8 @@ skip_strings_in_body = [
     "Your credit card payment is due soon",
     "as you requested, we are notifying you of an international charge",
     "credit card statement is ready",
+    "Check your score with Chase Credit",
+    "changing your cardmember agreement",
 ]
 
 def main(dry_run, proc_all):
@@ -61,7 +63,7 @@ def main(dry_run, proc_all):
                         continue
 
                     amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.]*) at (.*) has .* authorized on (.*) at", decoded_message)[0]
-                    entries.append([vendor, amount])
+                    entries.append([vendor, "$" + amount])
                     have_processed[d_mid] = True
                     print(d_mid, amount, vendor, datestr)
                 except Exception as e:
