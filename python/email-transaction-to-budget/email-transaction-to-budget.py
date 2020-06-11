@@ -27,6 +27,7 @@ skip_strings_in_body = [
     "credit card statement is ready",
     "Check your score with Chase Credit",
     "changing your cardmember agreement",
+    "information about your chase credit journey",
 ]
 
 def main(dry_run, proc_all):

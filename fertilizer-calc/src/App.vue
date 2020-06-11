@@ -5,10 +5,6 @@
         <h3>Fertilizer Calc</h3>
       </div>
     </div>
-    <div class="container">
-      <div v-for="(error, i) in errors" :key="i" class="text-danger row">{{error}}</div>
-      <div v-for="(message, i) in messages" :key="i" class="text-success row">{{message}}</div>
-    </div>
     <div class="container" v-if="recipes">
       <form class="form-inline row" v-on:submit.prevent="">
         <div class="form-group mr-2">
@@ -100,6 +96,9 @@
           </tbody>
         </table>
       </div>
+
+      <div v-for="(error, i) in errors" :key="i" class="text-danger row">{{error}}</div>
+      <div v-for="(message, i) in messages" :key="i" class="text-success row">{{message}}</div>
 
       <div v-if="hasData && densityLowerRange != 0" class="row">
         <div v-if="densityLowerRange.eq(densityUpperRange)">
