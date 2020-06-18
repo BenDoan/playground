@@ -21,15 +21,6 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SPREADSHEET_ID = '1h-GBpn__5CG-jlG1LuQbooNaOm_rLQmBmz6OS1GdaeM'
 RANGE_NAME = 'Transactions!A1:B'
 
-skip_strings_in_body = [
-    "Your credit card payment is due soon",
-    "as you requested, we are notifying you of an international charge",
-    "credit card statement is ready",
-    "Check your score with Chase Credit",
-    "changing your cardmember agreement",
-    "information about your chase credit journey",
-]
-
 def main(dry_run, proc_all):
     config = configparser.ConfigParser()
     config.read('imap-creds.ini');
@@ -59,11 +50,10 @@ def main(dry_run, proc_all):
                     decoded_message = message.decode("UTF-8")
                     scrubbed_message = decoded_message.replace("=", "").replace("\n", "")
 
-                    matching_skipped = [s for s in skip_strings_in_body if s.lower() in scrubbed_message.lower()]
-                    if len(matching_skipped) > 0:
+                    if "as you requested, we are notifying you of any charges over the amount of" not in scrubbed_message.lower():
                         continue
 
-                    amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.]*) at (.*) has .* authorized on (.*) at", decoded_message)[0]
+                    amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.,]*) at (.*) has .* authorized on (.*) at", decoded_message)[0]
                     entries.append([vendor, "$" + amount])
                     have_processed[d_mid] = True
                     print(d_mid, amount, vendor, datestr)
