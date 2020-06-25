@@ -1,6 +1,6 @@
 import Vue from "vue";
 import Router from "vue-router";
-import App from "@/App";
+import Calc from "@/Calc";
 import Search from "@/Search";
 
 Vue.use(Router);
@@ -10,8 +10,8 @@ export default new Router({
   routes: [
     {
       path: "/",
-      name: "App",
-      component: App
+      name: "Calc",
+      component: Calc
     },
     {
       path: "/search",
