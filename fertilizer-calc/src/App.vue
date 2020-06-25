@@ -92,8 +92,8 @@
           </thead>
           <tbody>
             <tr v-for="nutrient in nutrientOrder" :key="nutrient">
-              <td scope="row" v-if="concentrations[nutrient]">{{nutrient}}</td>
-              <td scope="row" v-if="concentrations[nutrient]">
+              <td scope="row" v-if="concentrations.hasOwnProperty(nutrient)">{{nutrient}}</td>
+              <td scope="row" v-if="concentrations.hasOwnProperty(nutrient)">
                 {{concentrations[nutrient].mul(100).toFixed(2)}}%
               </td>
             </tr>
@@ -101,8 +101,10 @@
         </table>
       </div>
 
-      <div v-for="(error, i) in errors" :key="i" class="text-danger row">{{error}}</div>
-      <div v-for="(message, i) in messages" :key="i" class="text-success row">{{message}}</div>
+      <div class="card card-body bg-light row mt5 mb5" v-if="errors.length !== 0 || messages.length !== 0">
+        <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
+        <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
+      </div>
 
       <div v-if="hasData && densityLowerRange != 0" class="row">
         <div v-if="densityLowerRange.eq(densityUpperRange)">
@@ -272,7 +274,12 @@ export default {
       }
     },
     _calcNutrientConcentrations() {
-      const concentrations = {}
+      // always show these since they're the most common
+      const concentrations = {
+        Nitrogen: Big(0),
+        Phosphorous: Big(0),
+        Potassium: Big(0),
+      }
       for (const [ingredient, ingredientPercent] of Object.entries(this.resultPercents)) {
         if (!(ingredient in this.nutrientConcentrations)) {
           continue
@@ -286,6 +293,8 @@ export default {
           concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
         }
       }
+      // eslint-disable-next-line
+      console.log("BEN: concentrations:", concentrations)
       this.concentrations = concentrations
     },
     _calcDensities() {
@@ -423,5 +432,37 @@ export default {
 <style scoped>
 .npk-analysis.npk-analysis {
   width: 350px;
+}
+
+.mt1 {
+  margin-top: 1px;
+}
+.mt2 {
+  margin-top: 2px;
+}
+.mt3 {
+  margin-top: 3px;
+}
+.mt4 {
+  margin-top: 4px;
+}
+.mt5 {
+  margin-top: 5px;
+}
+
+.mb1 {
+  margin-bottom: 1px;
+}
+.mb2 {
+  margin-bottom: 2px;
+}
+.mb3 {
+  margin-bottom: 3px;
+}
+.mb4 {
+  margin-bottom: 4px;
+}
+.mb5 {
+  margin-bottom: 5px;
 }
 </style>
