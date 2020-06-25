@@ -32,7 +32,7 @@
       </form>
 
       <div class="row" v-if="recipeComponents.length > 0">
-        <h3>Recipe</h3>
+        <h3>Recipeasda</h3>
         <table class="table">
           <thead>
             <th scope="col">Product</th>
@@ -49,6 +49,10 @@
                 </span>
               </td>
               <td>{{(component[1]*100).toFixed(2)}}%</td>
+            </tr>
+            <tr>
+              <td scope="row"><strong>Total</strong></td>
+              <td scope="row"><strong>{{totalRecipePercent.mul(100).toFixed(2)}}%</strong></td>
             </tr>
           </tbody>
         </table>
@@ -169,6 +173,7 @@ export default {
       chosenPercent: null,
       resultPercents: {},
       totalResultPercent: Big(0),
+      totalRecipePercent: Big(0),
       concentrations: {},
       densityUpperRange: Big(0),
       densityLowerRange: Big(0),
@@ -257,6 +262,8 @@ export default {
         }
       }
       this.resultPercents = resultPercents;
+
+      this.totalRecipePercent = this.recipeComponents.reduce((sum, x) => sum.add(x[1]), Big(0))
 
       if (this.recipeComponents.length > 0) {
         this.totalResultPercent = Object.values(this.resultPercents).reduce((sum, x) => sum.add(x))
