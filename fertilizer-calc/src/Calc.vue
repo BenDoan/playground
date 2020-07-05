@@ -240,8 +240,6 @@ export default {
           this.loadData(parse(event.target.result));
           localStorage.data_string = event.target.result
           this.messages.push("Loaded data");
-          // eslint-disable-next-line
-          console.log("Loaded new data");
         } catch (e) {
           this.errors.push(`Invalid JSON data file: ${e}`);
         }
@@ -294,8 +292,6 @@ export default {
           concentrations[nutrient] = curr.add(Big(nutrientPercent).mul(ingredientPercent))
         }
       }
-      // eslint-disable-next-line
-      console.log("BEN: concentrations:", concentrations)
       this.concentrations = concentrations
     },
     _calcDensities() {
