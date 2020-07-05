@@ -4,6 +4,8 @@
       <div class="row">
         <h3>Product Identifier Search</h3>
       </div>
+    </div>
+    <div class="container" v-if="ingredients.length != 0">
       <form class="form-inline row" v-on:submit.prevent="">
         <div class="form-group mr-2" required>
           <label class="sr-only" for="product-input">Product</label>
@@ -37,11 +39,13 @@
         </table>
       </div>
 
-      <div class="row" v-if="resultingIdentifier">
-        <h4>Identifier: {{resultingIdentifier}}</h4>
-      </div>
-      <div class="row" v-else>
-        <h4>Identifier: Not found</h4>
+      <div v-if="this.chosenProducts.length > 0">
+        <div class="row" v-if="resultingIdentifier">
+          <h4>Identifier: <span class="green">{{resultingIdentifier}}</span></h4>
+        </div>
+        <div class="row" v-else>
+          <h4>Identifier: <span class="red">Not found</span></h4>
+        </div>
       </div>
 
 
@@ -52,6 +56,8 @@
 
       <hr class="row">
 
+    </div>
+    <div class="container">
       <div class="row">
         Load data: <input type="file" id="file" ref="file" v-on:change="handleDataUpload()"/>
       </div>
@@ -137,3 +143,45 @@ export default {
 }
 
 </script>
+
+<style scoped>
+.red {
+  color: red;
+}
+
+.green {
+  color: green;
+}
+
+.mt1 {
+  margin-top: 1px;
+}
+.mt2 {
+  margin-top: 2px;
+}
+.mt3 {
+  margin-top: 3px;
+}
+.mt4 {
+  margin-top: 4px;
+}
+.mt5 {
+  margin-top: 5px;
+}
+
+.mb1 {
+  margin-bottom: 1px;
+}
+.mb2 {
+  margin-bottom: 2px;
+}
+.mb3 {
+  margin-bottom: 3px;
+}
+.mb4 {
+  margin-bottom: 4px;
+}
+.mb5 {
+  margin-bottom: 5px;
+}
+</style>
