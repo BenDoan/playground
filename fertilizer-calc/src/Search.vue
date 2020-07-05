@@ -44,6 +44,12 @@
         <h4>Identifier: Not found</h4>
       </div>
 
+
+      <div class="card card-body bg-light row mt5 mb5" v-if="errors.length !== 0 || messages.length !== 0">
+        <div v-for="(error, i) in errors" :key="i" class="text-danger">{{error}}</div>
+        <div v-for="(message, i) in messages" :key="i" class="text-success">{{message}}</div>
+      </div>
+
       <hr class="row">
 
       <div class="row">
@@ -63,6 +69,7 @@ export default {
       chosenProduct: null,
       chosenProducts: [],
       sortedPipedProductsToIdentifier: {},
+      messages: [],
     }
   },
   computed: {
