@@ -39,7 +39,7 @@ def main(dry_run, proc_all):
     with imaplib.IMAP4_SSL(hostname) as M:
         M.login(username, password)
         M.select('INBOX', readonly=True)
-        message_ids_from_chase = M.search('NONE', 'FROM', '"chase.com"')[1][0].split()
+        message_ids_from_chase = M.search('NONE', 'FROM', '"jpmorgan.com"')[1][0].split()
 
         entries = []
         for mid in message_ids_from_chase:

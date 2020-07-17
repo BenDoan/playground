@@ -33,7 +33,7 @@
       </form>
 
       <div class="row" v-if="recipeComponents.length > 0">
-        <h3>Recipeasda</h3>
+        <h3>Recipe</h3>
         <table class="table">
           <thead>
             <th scope="col">Product</th>
