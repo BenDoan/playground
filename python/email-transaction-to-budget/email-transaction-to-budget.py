@@ -39,10 +39,11 @@ def main(dry_run, proc_all):
     with imaplib.IMAP4_SSL(hostname) as M:
         M.login(username, password)
         M.select('INBOX', readonly=True)
-        message_ids_from_chase = M.search('NONE', 'FROM', '"jpmorgan.com"')[1][0].split()
+        message_ids_from_chase = M.search('NONE', 'FROM', '"chase.com"')[1][0].split()
+        message_ids_from_jpmorgan = M.search('NONE', 'FROM', '"jpmorgan.com"')[1][0].split()
 
         entries = []
-        for mid in message_ids_from_chase:
+        for mid in message_ids_from_chase + message_ids_from_jpmorgan:
             d_mid = mid.decode("utf-8")
             if d_mid not in have_processed:
                 try:
