@@ -1,0 +1,44 @@
+{
+  "product-recipes": {
+    "FooBarBaz": {
+      "Ammonium Sulfate": "0.95",
+      "Potassium Chloride": "0.05"
+    },
+    "Ammonium Sulfate (21-0-0-24)": {
+      "Ammonium Sulfate": "0.5",
+      "Impurities": "0.5"
+    }
+  },
+  "nutrient-concentrations": {
+    "Ammonium Sulfate": {
+      "Nitrogen": "0.4"
+    },
+    "Ammonium Nitrate": {
+      "Nitrogen": "0.35"
+    }
+  },
+  "nutrient-order": [
+    "Nitrogen",
+    "Phosphorous",
+    "Potassium",
+    "Sulfur",
+    "Zinc",
+    "Boron",
+    "Copper"
+  ],
+  "ingredient-CASNumbers": {
+    "Ammonium Hydroxide": "12313-22-3",
+    "Ammonium Phosphate, Dibasic": "123123-21-1"
+  },
+  "ingredient-densities": {
+    "Ammonium Sulfate": "7.48",
+    "Ammonium Phosphate, Dibasic": "6.684",
+    "Ammonium Sulfate (21-0-0-24)": "1337",
+    "FooBarBaz": "6.684"
+  },
+  "ingredient-ph": {
+    "FooBarBaz": "30-43",
+    "Ammonium Sulfate (21-0-0-24)": "1-2",
+    "Ammoniated Zinc 15%": "4"
+  }
+}
