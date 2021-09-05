@@ -5,12 +5,14 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import configparser
+import datetime
 import imaplib
 import json
 import os.path
 import pickle
 import re
 import traceback
+from bs4 import BeautifulSoup
 
 HAVE_READ_FILE = 'have-processed.json'
 
@@ -39,25 +41,49 @@ def main(dry_run, proc_all):
     with imaplib.IMAP4_SSL(hostname) as M:
         M.login(username, password)
         M.select('INBOX', readonly=True)
-        message_ids_from_chase = M.search('NONE', 'FROM', '"chase.com"')[1][0].split()
-        message_ids_from_jpmorgan = M.search('NONE', 'FROM', '"jpmorgan.com"')[1][0].split()
+
+        now = datetime.datetime.now()
+        month_ago = datetime.timedelta(days=-7) + now
+        formatted_date = month_ago.strftime("%d-%b-%Y")
+
+        message_ids_from_chase = M.search('NONE', 'FROM', '"chase.com"', 'SINCE', formatted_date)[1][0].split()
+        print(f"Found {len(message_ids_from_chase)} messages")
 
         entries = []
-        for mid in message_ids_from_chase + message_ids_from_jpmorgan:
+        for mid in message_ids_from_chase:
             d_mid = mid.decode("utf-8")
             if d_mid not in have_processed:
                 try:
                     message = M.fetch(d_mid, '(BODY.PEEK[TEXT])')[1][0][1]
                     decoded_message = message.decode("UTF-8")
                     scrubbed_message = decoded_message.replace("=", "").replace("\n", "")
+                    soup = BeautifulSoup(scrubbed_message, 'html.parser')
+                    tables = soup.findAll("table")
+                    merchant = None
+                    amount = None
+                    datestr = None
+                    for table in tables:
+                        tds = table.findAll("td")
+                        if len(tds) < 2:
+                            continue
+                        text1 = tds[0].text
+                        text2 = tds[1].text
 
-                    if "as you requested, we are notifying you of any charges over the amount of" not in scrubbed_message.lower():
+                        if text1 == "Merchant":
+                            merchant = clean(text2)
+
+                        if text1 == "Amount":
+                            amount = clean(text2)
+
+                        if text1 == "Date":
+                            datestr = clean(text2)
+
+                    if "you made an online, phone, or mail transaction" not in scrubbed_message.lower():
                         continue
 
-                    amount, vendor, datestr = re.findall("\(\$USD\) ([0-9.,]*) at (.*) has .* authorized on (.*) at", decoded_message)[0]
-                    entries.append([vendor, "$" + amount])
+                    entries.append([merchant, amount])
                     have_processed[d_mid] = True
-                    print(d_mid, amount, vendor, datestr)
+                    print(d_mid, amount, merchant, datestr)
                 except Exception as e:
                     print("Couldn't process: {}".format(decoded_message))
                     traceback.print_exc()
@@ -68,6 +94,9 @@ def main(dry_run, proc_all):
     if not dry_run:
         with open(HAVE_READ_FILE, "w+") as f:
             json.dump(have_processed, f)
+
+def clean(s):
+    return s.replace("\r", "")
 
 def add_to_spreadsheet(entries):
     creds = None
