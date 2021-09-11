@@ -1,5 +1,5 @@
 imap-creds.ini
-have-processed.json
+have-processed*.json
 credentials.json
 token.pickle
 env

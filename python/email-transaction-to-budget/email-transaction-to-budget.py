@@ -14,7 +14,8 @@ import re
 import traceback
 from bs4 import BeautifulSoup
 
-HAVE_READ_FILE = 'have-processed.json'
+HAVE_READ_MIDS_FILE = 'have-processed-mids.json'
+HAVE_READ_TRANSACTIONS_FILE = 'have-processed-transactions.json'
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -31,10 +32,12 @@ def main(dry_run, proc_all):
     password = config.get('creds', 'password')
     hostname = config.get('server', 'hostname')
 
-    have_processed = {}
+    have_processed_mids = {}
+    have_processed_transactions = {}
     try:
         if not proc_all:
-            have_processed = json.load(open(HAVE_READ_FILE))
+            have_processed_mids = json.load(open(HAVE_READ_MIDS_FILE))
+            have_processed_transactions = json.load(open(HAVE_READ_TRANSACTIONS_FILE))
     except:
         pass
 
@@ -52,11 +55,17 @@ def main(dry_run, proc_all):
         entries = []
         for mid in message_ids_from_chase:
             d_mid = mid.decode("utf-8")
-            if d_mid not in have_processed:
+            if d_mid not in have_processed_mids:
                 try:
                     message = M.fetch(d_mid, '(BODY.PEEK[TEXT])')[1][0][1]
                     decoded_message = message.decode("UTF-8")
                     scrubbed_message = decoded_message.replace("=", "").replace("\n", "")
+
+                    if "credit card statement is ready" in scrubbed_message:
+                        have_processed_mids[d_mid] = True
+                        continue
+
+
                     soup = BeautifulSoup(scrubbed_message, 'html.parser')
                     tables = soup.findAll("table")
                     merchant = None
@@ -78,11 +87,19 @@ def main(dry_run, proc_all):
                         if text1 == "Date":
                             datestr = clean(text2)
 
-                    if "you made an online, phone, or mail transaction" not in scrubbed_message.lower():
+                    ident = f"{merchant}-{amount}-{datestr}"
+
+                    if amount is None or merchant is None:
+                        print("failed to process")
+                        print(soup.prettify())
+                        merchant = "ERROR"
+
+                    have_processed_mids[d_mid] = True
+                    if ident in have_processed_transactions:
                         continue
 
                     entries.append([merchant, amount])
-                    have_processed[d_mid] = True
+                    have_processed_transactions[ident] = True
                     print(d_mid, amount, merchant, datestr)
                 except Exception as e:
                     print("Couldn't process: {}".format(decoded_message))
@@ -92,11 +109,16 @@ def main(dry_run, proc_all):
             add_to_spreadsheet(entries)
 
     if not dry_run:
-        with open(HAVE_READ_FILE, "w+") as f:
-            json.dump(have_processed, f)
+        with open(HAVE_READ_MIDS_FILE, "w+") as f:
+            json.dump(have_processed_mids, f)
+        with open(HAVE_READ_TRANSACTIONS_FILE, "w+") as f:
+            json.dump(have_processed_transactions, f)
 
 def clean(s):
-    return s.replace("\r", "")
+    t = s.replace("\r", "")
+    t = re.sub(r"</?\w+>", "", t)
+    t = t.strip()
+    return t
 
 def add_to_spreadsheet(entries):
     creds = None
