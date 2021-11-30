@@ -36,44 +36,73 @@ const int timerGoalAddr = 0;
 unsigned long goalTime = 0;
 unsigned long startedSettingTimeGoalMillis = 0;
 
+int lastIncrState = HIGH;
+int lastDecrState = HIGH;
+
+unsigned long debounceDelay = 500;
+unsigned long lastDebounceTimeIncr = 0;
+unsigned long lastDebounceTimeDecr = 0;
+
 SoftwareSerial s7s(SOFTWARE_RX, SOFTWARE_TX);
 
 void setup() {
-  State state = COUNTING_DOWN;
-
   s7s.begin(9600);
-  s7s.write(0x76);  // Clear display
+  s7s.write(0x76); // clear display
+
   s7s.write(0x77);
-  s7s.write(1<<COLON);
+  s7s.write(1<<COLON); // enable colon
 
   q.setup();
   pinMode(INPUT_PIN_INCR, INPUT_PULLUP);
   pinMode(INPUT_PIN_DECR, INPUT_PULLUP);
 
   timeGoalMinutes = EEPROM.read(timerGoalAddr);
-  timeGoalMinutes = 1;
   goalTime = millis() + (timeGoalMinutes * 1000L * 60);
 }
 
 void readGoalAdjustment() {
   int incrVal = digitalRead(INPUT_PIN_INCR);
+
+  if (incrVal != lastIncrState) {
+    lastDebounceTimeIncr = millis();
+  }
+
+  if ((millis() - lastDebounceTimeIncr) > debounceDelay) {
+    lastIncrState = incrVal;
+
+    if (incrVal == LOW) {
+      q.setRGB(YELLOW);
+      timeGoalMinutes++;
+      state = SETTING_TIME_GOAL;
+      startedSettingTimeGoalMillis = millis();
+      lastDebounceTimeIncr = millis();
+    } else {
+      q.setRGB(PURPLE);
+    }
+  }
+
+  lastIncrState = incrVal;
+
   int decrVal = digitalRead(INPUT_PIN_DECR);
-  if (incrVal == HIGH || decrVal == HIGH) {
-    q.setRGB(PURPLE);
-  }
-  if (incrVal == LOW || decrVal == LOW) {
-    state = SETTING_TIME_GOAL;
-    startedSettingTimeGoalMillis = millis();
-    q.setRGB(YELLOW);
+  if (decrVal != lastDecrState) {
+    lastDebounceTimeDecr = millis();
   }
 
-  if (incrVal == LOW) {
-    timeGoalMinutes++;
+  if ((millis() - lastDebounceTimeDecr) > debounceDelay) {
+    lastDecrState = decrVal;
+
+    if (decrVal == LOW) {
+      q.setRGB(YELLOW);
+      timeGoalMinutes--;
+      state = SETTING_TIME_GOAL;
+      startedSettingTimeGoalMillis = millis();
+      lastDebounceTimeDecr = millis();
+    } else {
+      q.setRGB(PURPLE);
+    }
   }
 
-  if (decrVal == LOW) {
-    timeGoalMinutes--;
-  }
+  lastDecrState = decrVal;
 
   EEPROM.write(timerGoalAddr, timeGoalMinutes);
 }
@@ -82,8 +111,8 @@ void displayTimeLeft() {
   unsigned long timeLeftMillis = goalTime - millis();
 
   if (millis() > goalTime) {
-    goalTime = millis() + (timeGoalMinutes * 1000L * 60);
-    timeLeftMillis = goalTime;
+    state = AT_ZERO;
+    return;
   }
 
 
@@ -96,8 +125,17 @@ void displayTimeLeft() {
 
 }
 
+void resetTime() {
+  goalTime = millis() + (timeGoalMinutes * 1000L * 60);
+}
+
 void displayTimeGoal() {
   sprintf(tempString, "%4d", timeGoalMinutes);
+  s7s.print(tempString);
+}
+
+void displayDashes() {
+  sprintf(tempString, "----");
   s7s.print(tempString);
 }
 
@@ -120,6 +158,9 @@ void loop() {
       break;
 
     case AT_ZERO:
+      displayDashes();
+      resetTime();
+      state = COUNTING_DOWN;
       break;
 
     default:
