@@ -123,7 +123,6 @@ def main(dry_run, proc_all):
                     print("Couldn't process: {}".format(decoded_message))
                     traceback.print_exc()
 
-        add_to_spreadsheet(service, entries)
         if not dry_run:
             add_to_spreadsheet(service, entries)
 
