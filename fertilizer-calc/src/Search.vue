@@ -59,7 +59,7 @@
     </div>
     <div class="container">
       <div class="row">
-        Load data: <input type="file" id="file" ref="file" v-on:change="handleDataUpload()"/>
+        Load data: <input type="file" id="file" ref="file" @change="handleDataUpload()"/>
       </div>
     </div>
   </div>
@@ -80,7 +80,6 @@ export default {
   },
   computed: {
     resultingIdentifier() {
-      this.chosenProducts.sort();
       return this.sortedPipedProductsToIdentifier[this.chosenProducts.join("|")]
     }
   },
@@ -96,6 +95,7 @@ export default {
     onAdd() {
       if (!this.chosenProducts.includes(this.chosenProduct)) {
         this.chosenProducts.push(this.chosenProduct);
+        this.chosenProducts.sort();
       }
     },
     onDelete(index) {
@@ -103,22 +103,25 @@ export default {
       this.chosenProduct = null;
     },
     loadData: function(data) {
+      const totalIngredients = []
+
       const lines = data.split("\n");
       for (const line of lines) {
         const split = line.split("|");
         if (split.length <= 1) continue
 
         const ingredients = split.slice(0, split.length - 1)
-        ingredients.sort();
         const ident = split[split.length - 1];
 
         for (const ingredient of ingredients) {
-          this.ingredients.push(ingredient);
+          totalIngredients.push(ingredient);
         }
-        this.ingredients = [...new Set(this.ingredients)]
 
         this.sortedPipedProductsToIdentifier[ingredients.join("|")] = ident;
       }
+      const uniqueIngredients = [...new Set(totalIngredients)]
+      uniqueIngredients.sort()
+      this.ingredients = uniqueIngredients
     },
     handleDataUpload: function() {
       const file = this.$refs.file.files[0];
@@ -131,11 +134,15 @@ export default {
           this.messages.push("Loaded data");
         } catch (e) {
           this.errors.push(`Invalid JSON data file: ${e}`);
+          // eslint-disable-next-line
+          console.error(e)
         }
 
       }
       reader.onerror = error => {
         this.errors.push(`Error while reading file: ${error}`);
+        // eslint-disable-next-line
+        console.log(error)
       }
       reader.readAsText(file)
     },
