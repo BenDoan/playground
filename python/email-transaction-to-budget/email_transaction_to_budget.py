@@ -58,7 +58,7 @@ def main(dry_run, proc_all):
 
     with imaplib.IMAP4_SSL(hostname) as M:
         M.login(username, password)
-        M.select("INBOX", readonly=True)
+        M.select("Transactions", readonly=True)
 
         now = datetime.datetime.now()
         month_ago = datetime.timedelta(days=-7) + now
