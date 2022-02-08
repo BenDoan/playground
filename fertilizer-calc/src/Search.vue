@@ -80,7 +80,6 @@ export default {
   },
   computed: {
     resultingIdentifier() {
-      console.log(this.sortedPipedProductsToIdentifier, this.chosenProducts)
       return this.sortedPipedProductsToIdentifier[this.chosenProducts.join("|")]
     }
   },
