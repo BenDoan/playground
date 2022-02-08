@@ -80,6 +80,7 @@ export default {
   },
   computed: {
     resultingIdentifier() {
+      console.log(this.sortedPipedProductsToIdentifier, this.chosenProducts)
       return this.sortedPipedProductsToIdentifier[this.chosenProducts.join("|")]
     }
   },
@@ -111,6 +112,8 @@ export default {
         if (split.length <= 1) continue
 
         const ingredients = split.slice(0, split.length - 1)
+        ingredients.sort()
+
         const ident = split[split.length - 1];
 
         for (const ingredient of ingredients) {
