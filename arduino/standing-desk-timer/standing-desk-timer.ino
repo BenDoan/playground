@@ -17,6 +17,7 @@
 
 #define INPUT_PIN_INCR 12
 #define INPUT_PIN_DECR 9
+#define OUTPUT_PIN_VIB 6
 #define SOFTWARE_TX 8
 #define SOFTWARE_RX 7
 
@@ -55,8 +56,10 @@ void setup() {
   q.setup();
   pinMode(INPUT_PIN_INCR, INPUT_PULLUP);
   pinMode(INPUT_PIN_DECR, INPUT_PULLUP);
+  pinMode(OUTPUT_PIN_VIB, OUTPUT);
 
   timeGoalMinutes = EEPROM.read(timerGoalAddr);
+  timeGoalMinutes = 2;
   goalTime = millis() + (timeGoalMinutes * 1000L * 60);
 }
 
@@ -76,6 +79,13 @@ void readGoalAdjustment() {
       state = SETTING_TIME_GOAL;
       startedSettingTimeGoalMillis = millis();
       lastDebounceTimeIncr = millis();
+
+      digitalWrite(OUTPUT_PIN_VIB, HIGH);
+      delay(500);
+      digitalWrite(OUTPUT_PIN_VIB, LOW);
+      if (timeGoalMinutes > 90) {
+        timeGoalMinutes = 90;
+      }
     } else {
       q.setRGB(PURPLE);
     }
@@ -97,6 +107,10 @@ void readGoalAdjustment() {
       state = SETTING_TIME_GOAL;
       startedSettingTimeGoalMillis = millis();
       lastDebounceTimeDecr = millis();
+
+      if (timeGoalMinutes < 1) {
+        timeGoalMinutes = 1;
+      }
     } else {
       q.setRGB(PURPLE);
     }
@@ -130,7 +144,7 @@ void resetTime() {
 }
 
 void displayTimeGoal() {
-  sprintf(tempString, "%4d", timeGoalMinutes);
+  sprintf(tempString, "%04d", timeGoalMinutes);
   s7s.print(tempString);
 }
 
