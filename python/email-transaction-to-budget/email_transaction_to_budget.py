@@ -34,7 +34,7 @@ SHOPPING_RANGE = "E6:F"
 RECURRING_RANGE = ""
 
 # keep lowercase
-food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns"]
+food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "trader joe", "asian market"]
 
 
 def main(dry_run, proc_all):
