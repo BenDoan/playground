@@ -15,6 +15,9 @@ import traceback
 import enum
 from bs4 import BeautifulSoup
 import time
+import logging
+
+log = logging.getLogger(__name__)
 
 HAVE_READ_MIDS_FILE = "have-processed-mids.json"
 HAVE_READ_TRANSACTIONS_FILE = "have-processed-transactions.json"
@@ -38,6 +41,10 @@ food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "tr
 
 
 def main(dry_run, proc_all):
+    FORMAT = '[%(asctime)s] %(message)s'
+    logging.basicConfig(filename='email_transaction_to_budget.log', level=logging.INFO, format=FORMAT)
+    logging.getLogger().addHandler(logging.StreamHandler())
+
     config = configparser.ConfigParser()
     config.read("imap-creds.ini")
 
@@ -61,67 +68,13 @@ def main(dry_run, proc_all):
         M.select("Transactions", readonly=True)
 
         now = datetime.datetime.now()
-        month_ago = datetime.timedelta(days=-7) + now
-        formatted_date = month_ago.strftime("%d-%b-%Y")
+        week_ago = datetime.timedelta(days=-7) + now
+        formatted_date = week_ago.strftime("%d-%b-%Y")
 
-        message_ids_from_chase = M.search(
-            "NONE", "FROM", '"chase.com"', "SINCE", formatted_date
-        )[1][0].split()
-        print(f"Found {len(message_ids_from_chase)} messages")
-
-        entries = []
-        for mid in message_ids_from_chase:
-            d_mid = mid.decode("utf-8")
-            if d_mid not in have_processed_mids:
-                try:
-                    message = M.fetch(d_mid, "(BODY.PEEK[TEXT])")[1][0][1]
-                    decoded_message = message.decode("UTF-8")
-                    scrubbed_message = decoded_message.replace("=", "").replace(
-                        "\n", ""
-                    )
-
-                    if "credit card statement is ready" in scrubbed_message:
-                        have_processed_mids[d_mid] = True
-                        continue
-
-                    soup = BeautifulSoup(scrubbed_message, "html.parser")
-                    tables = soup.findAll("table")
-                    merchant = None
-                    amount = None
-                    datestr = None
-                    for table in tables:
-                        tds = table.findAll("td")
-                        if len(tds) < 2:
-                            continue
-                        text1 = tds[0].text
-                        text2 = tds[1].text
-
-                        if text1 == "Merchant":
-                            merchant = clean(text2)
-
-                        if text1 == "Amount":
-                            amount = clean(text2)
-
-                        if text1 == "Date":
-                            datestr = clean(text2)
-
-                    ident = f"{merchant}-{amount}-{datestr}"
-
-                    if amount is None or merchant is None:
-                        print("failed to process")
-                        print(soup.prettify())
-                        merchant = "ERROR"
-
-                    have_processed_mids[d_mid] = True
-                    if ident in have_processed_transactions:
-                        continue
-
-                    entries.append([merchant, amount])
-                    have_processed_transactions[ident] = True
-                    print(d_mid, amount, merchant, datestr)
-                except Exception as e:
-                    print("Couldn't process: {}".format(decoded_message))
-                    traceback.print_exc()
+        entries = [
+            process_chase(M, formatted_date, have_processed_mids, have_processed_transactions),
+            process_capital_one(M, formatted_date, have_processed_mids, have_processed_transactions),
+        ]
 
         if not dry_run:
             add_to_spreadsheet(service, entries)
@@ -290,6 +243,116 @@ def classify(merchant, amount):
     for food_vendor in food_vendors:
         if food_vendor in merchant_l:
             return BudgetCategory.food
+
+
+def process_chase(M, formatted_date, have_processed_mids, have_processed_transactions):
+    message_ids_from_chase = M.search(
+        "NONE", "FROM", '"chase.com"', "SINCE", formatted_date
+    )[1][0].split()
+    log.info(f"Found {len(message_ids_from_chase)} messages from Chase")
+    entries = []
+    for mid in message_ids_from_chase:
+        d_mid = mid.decode("utf-8")
+        if d_mid not in have_processed_mids:
+            try:
+                message = M.fetch(d_mid, "(BODY.PEEK[TEXT])")[1][0][1]
+                decoded_message = message.decode("UTF-8")
+                scrubbed_message = decoded_message.replace("=", "").replace(
+                    "\n", ""
+                )
+
+                if "credit card statement is ready" in scrubbed_message:
+                    have_processed_mids[d_mid] = True
+                    continue
+
+                soup = BeautifulSoup(scrubbed_message, "html.parser")
+                tables = soup.find_all("table")
+                merchant = None
+                amount = None
+                datestr = None
+                for table in tables:
+                    tds = table.find_all("td")
+                    if len(tds) < 2:
+                        continue
+                    text1 = tds[0].text
+                    text2 = tds[1].text
+
+                    if text1 == "Merchant":
+                        merchant = clean(text2)
+
+                    if text1 == "Amount":
+                        amount = clean(text2)
+
+                    if text1 == "Date":
+                        datestr = clean(text2)
+
+                ident = f"{merchant}-{amount}-{datestr}"
+
+                if amount is None or merchant is None:
+                    log.error("failed to process")
+                    log.error(soup.prettify())
+                    merchant = "ERROR"
+
+                have_processed_mids[d_mid] = True
+                if ident in have_processed_transactions:
+                    continue
+
+                entries.append([merchant, amount])
+                have_processed_transactions[ident] = True
+                log.info(f"{d_mid}, {amount}, {merchant}, {datestr}")
+            except Exception as e:
+                log.error("Couldn't process: {}".format(decoded_message))
+                traceback.print_exc()
+    return entries
+
+def process_capital_one(M, formatted_date, have_processed_mids, have_processed_transactions):
+    message_ids_from_capone = M.search(
+        "NONE", "FROM", '"capitalone.com"', "SINCE", formatted_date
+    )[1][0].split()
+    log.info(f"Found {len(message_ids_from_capone)} messages from Capital One")
+    entries = []
+    for mid in message_ids_from_capone:
+        d_mid = mid.decode("utf-8")
+        if d_mid not in have_processed_mids:
+            try:
+                message = M.fetch(d_mid, "(BODY.PEEK[TEXT])")[1][0][1]
+                decoded_message = message.decode("UTF-8")
+
+                # format:
+                # notifying you that on August 14, 2025, at AMAZON MKTPLACE PMTS, a pending authorization or purchase in the amount of $45.91 was placed or charged
+
+                amount_match = re.search(r'\$\d+\.\d{2}', decoded_message)
+                if amount_match:
+                    amount = amount_match.group(0)
+                else:
+                    amount = "AMOUNT-ERROR"
+
+                merchant_match = re.search(r', at ([^,]+),', decoded_message)
+                if merchant_match:
+                    merchant = merchant_match.group(1)
+                else:
+                    merchant = "MERCHANT-ERROR"
+
+                date_match = re.search(r'on (\S+ \d{1,2}, \d{4}),', decoded_message)
+                if date_match:
+                    transaction_date = date_match.group(1)
+                else:
+                    transaction_date = "DATE-ERROR"
+
+                ident = f"{merchant}-{amount}-{transaction_date}"
+
+                have_processed_mids[d_mid] = True
+                if ident in have_processed_transactions:
+                    continue
+
+                entries.append([merchant, amount])
+                have_processed_transactions[ident] = True
+                log.info(f"{d_mid}, {amount}, {merchant}, {transaction_date}")
+            except Exception as e:
+                log.error("Couldn't process: {}".format(decoded_message))
+                traceback.print_exc()
+    return entries
+
 
 
 if __name__ == "__main__":
