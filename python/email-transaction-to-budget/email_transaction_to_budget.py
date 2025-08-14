@@ -72,8 +72,8 @@ def main(dry_run, proc_all):
         formatted_date = week_ago.strftime("%d-%b-%Y")
 
         entries = [
-            process_chase(M, formatted_date, have_processed_mids, have_processed_transactions),
-            process_capital_one(M, formatted_date, have_processed_mids, have_processed_transactions),
+            *process_chase(M, formatted_date, have_processed_mids, have_processed_transactions),
+            *process_capital_one(M, formatted_date, have_processed_mids, have_processed_transactions),
         ]
 
         if not dry_run:
