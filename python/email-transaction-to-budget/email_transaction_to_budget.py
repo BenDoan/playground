@@ -36,8 +36,7 @@ FOOD_RANGE = "B6:C"
 SHOPPING_RANGE = "E6:F"
 RECURRING_RANGE = ""
 
-# keep lowercase
-food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "trader joe", "asian market"]
+food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "trader joe", "asian market", "aldi"]
 
 
 def main(dry_run, proc_all):
@@ -240,7 +239,7 @@ def classify(merchant, amount):
     if merchant.startswith("TST*"):
         return BudgetCategory.food
 
-    for food_vendor in food_vendors:
+    for food_vendor in [x.lower() for x in food_vendors]:
         if food_vendor in merchant_l:
             return BudgetCategory.food
 
