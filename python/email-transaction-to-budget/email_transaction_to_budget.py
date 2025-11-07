@@ -320,7 +320,7 @@ def process_capital_one(M, formatted_date, have_processed_mids, have_processed_t
                 # format:
                 # notifying you that on August 14, 2025, at AMAZON MKTPLACE PMTS, a pending authorization or purchase in the amount of $45.91 was placed or charged
 
-                amount_match = re.search(r'\$\d+\.\d{2}', decoded_message)
+                amount_match = re.search(r'\$[0-9,]+\.\d{2}', decoded_message)
                 if amount_match:
                     amount = amount_match.group(0)
                 else:
