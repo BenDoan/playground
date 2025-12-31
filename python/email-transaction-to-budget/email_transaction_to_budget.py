@@ -36,7 +36,7 @@ FOOD_RANGE = "B6:C"
 SHOPPING_RANGE = "E6:F"
 RECURRING_RANGE = ""
 
-food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "trader joe", "asian market", "aldi"]
+food_vendors = ["hy-vee", "doordash", "chipotle", "jimmy johns", "wholefds", "trader joe", "asian market", "aldi", "costco"]
 
 
 def main(dry_run, proc_all):
